@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">WealthPulse</string>
+    <string name="title_activity_main">WealthPulse</string>
+    <string name="package_name">com.wealthpulse.app</string>
+    <string name="custom_url_scheme">com.wealthpulse.app</string>
+</resources>

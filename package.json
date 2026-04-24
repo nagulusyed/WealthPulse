@@ -1,0 +1,24 @@
+{
+  "name": "finance-app",
+  "version": "1.0.0",
+  "description": "A beautiful, feature-rich personal finance application built with vanilla web technologies. Track income, expenses, set budgets, and visualize your financial health — all data stays private in your browser.",
+  "main": "app.js",
+  "scripts": {
+    "sync": "npx cap sync android",
+    "copy": "npx cap copy android",
+    "open:android": "npx cap open android",
+    "build": "npx cap copy android && npx cap sync android",
+    "serve": "npx http-server www -p 8090 -c-1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2"
+  }
+}

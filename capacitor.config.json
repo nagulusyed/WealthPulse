@@ -1,0 +1,23 @@
+{
+  "appId": "com.wealthpulse.app",
+  "appName": "WealthPulse",
+  "webDir": "www",
+  "backgroundColor": "#0a0a12",
+  "android": {
+    "backgroundColor": "#0a0a12",
+    "allowMixedContent": true,
+    "overScrollMode": "never"
+  },
+  "plugins": {
+    "StatusBar": {
+      "backgroundColor": "#0a0a12",
+      "style": "LIGHT"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#0a0a12",
+      "showSpinner": false,
+      "launchAutoHide": true
+    }
+  }
+}

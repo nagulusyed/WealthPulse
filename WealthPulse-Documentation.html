@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WealthPulse — App Documentation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; color: #1a1a2e; line-height: 1.6; background: #fff; }
+
+        .page { page-break-after: always; padding: 3rem; min-height: 100vh; }
+        .page:last-child { page-break-after: avoid; }
+
+        /* Cover Page */
+        .cover { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg, #0a0a12 0%, #1a1830 100%); color: #fff; }
+        .cover-logo { width: 80px; height: 80px; background: linear-gradient(135deg, #6366f1, #a78bfa); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin-bottom: 2rem; box-shadow: 0 8px 32px rgba(99, 102, 241, 0.4); }
+        .cover h1 { font-size: 3rem; font-weight: 800; background: linear-gradient(135deg, #6366f1, #a78bfa); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem; }
+        .cover .subtitle { font-size: 1.25rem; color: #9d97b5; margin-bottom: 3rem; }
+        .cover-meta { color: #5e5880; font-size: 0.875rem; }
+        .cover-meta span { display: block; margin: 0.25rem 0; }
+        .badge-row { display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap; justify-content: center; }
+        .badge { padding: 0.375rem 0.875rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+        .badge-html { background: rgba(227, 79, 38, 0.15); color: #e34f26; }
+        .badge-css { background: rgba(21, 114, 182, 0.15); color: #1572b6; }
+        .badge-js { background: rgba(247, 223, 30, 0.15); color: #b8a600; }
+        .badge-chart { background: rgba(255, 99, 132, 0.15); color: #ff6384; }
+        .badge-cap { background: rgba(17, 158, 255, 0.15); color: #119eff; }
+        .badge-android { background: rgba(61, 220, 132, 0.15); color: #3ddc84; }
+
+        /* Section Pages */
+        h2 { font-size: 1.75rem; font-weight: 700; color: #1a1a2e; margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 3px solid #6366f1; }
+        h3 { font-size: 1.25rem; font-weight: 600; color: #6366f1; margin: 1.5rem 0 0.75rem; }
+        p { margin-bottom: 1rem; color: #444; }
+        ul { margin: 0.5rem 0 1rem 1.5rem; color: #444; }
+        li { margin: 0.375rem 0; }
+
+        .screenshot-section { margin: 2rem 0; }
+        .screenshot-section img { width: 100%; max-width: 800px; border-radius: 12px; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12); border: 1px solid #e5e5e5; display: block; margin: 1rem auto; }
+        .screenshot-caption { text-align: center; font-size: 0.875rem; color: #666; font-style: italic; margin-top: 0.5rem; }
+
+        table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.875rem; }
+        th { background: #f0f0f8; color: #1a1a2e; padding: 0.75rem 1rem; text-align: left; font-weight: 600; border-bottom: 2px solid #6366f1; }
+        td { padding: 0.625rem 1rem; border-bottom: 1px solid #eee; color: #444; }
+        tr:hover td { background: #fafafe; }
+
+        .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+        .feature-card { padding: 1.25rem; border-radius: 12px; border: 1px solid #e5e5e5; background: #fafafe; }
+        .feature-card h4 { font-size: 1rem; font-weight: 600; color: #6366f1; margin-bottom: 0.5rem; }
+        .feature-card p { font-size: 0.85rem; margin: 0; }
+
+        .tech-pill { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 500; margin: 0.125rem; background: #f0f0f8; color: #6366f1; }
+
+        @media print {
+            .page { padding: 2rem; }
+            .screenshot-section img { max-width: 700px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PAGE 1: Cover -->
+    <div class="page cover">
+        <div class="cover-logo">
+            <svg width="40" height="40" viewBox="0 0 32 32" fill="none"><path d="M10 22V16M16 22V12M22 22V9" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
+        </div>
+        <h1>WealthPulse</h1>
+        <p class="subtitle">Personal Finance Tracker — App Documentation</p>
+        <div class="badge-row">
+            <span class="badge badge-html">HTML5</span>
+            <span class="badge badge-css">CSS3</span>
+            <span class="badge badge-js">JavaScript</span>
+            <span class="badge badge-chart">Chart.js</span>
+            <span class="badge badge-cap">Capacitor</span>
+            <span class="badge badge-android">Android</span>
+        </div>
+        <div class="cover-meta">
+            <span>Version 1.0.0</span>
+            <span>April 2026</span>
+            <span>Built with Vanilla JS + Capacitor</span>
+        </div>
+    </div>
+
+    <!-- PAGE 2: Overview -->
+    <div class="page">
+        <h2>📋 Project Overview</h2>
+        <p>WealthPulse is a personal finance management application that helps users track income and expenses, visualize spending patterns, and manage monthly budgets. It runs as both a <strong>web application</strong> and a <strong>native Android app</strong>.</p>
+
+        <h3>Key Highlights</h3>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h4>📊 Dashboard</h4>
+                <p>Real-time overview with balance, income, expenses, savings rate, charts, and trends.</p>
+            </div>
+            <div class="feature-card">
+                <h4>💸 Transaction Management</h4>
+                <p>Add, edit, delete, search, and filter income and expense transactions.</p>
+            </div>
+            <div class="feature-card">
+                <h4>🎯 Budget Tracking</h4>
+                <p>Set monthly spending limits per category with color-coded progress bars.</p>
+            </div>
+            <div class="feature-card">
+                <h4>📱 Cross-Platform</h4>
+                <p>Runs as a web app in any browser and as a native Android app via Capacitor.</p>
+            </div>
+            <div class="feature-card">
+                <h4>💾 Local Storage</h4>
+                <p>All data stays on your device. No server, no cloud, no accounts required.</p>
+            </div>
+            <div class="feature-card">
+                <h4>📥 Export / Import</h4>
+                <p>Backup and restore your financial data as JSON files.</p>
+            </div>
+        </div>
+
+        <h3>Technology Stack</h3>
+        <table>
+            <thead><tr><th>Technology</th><th>Version</th><th>Purpose</th></tr></thead>
+            <tbody>
+                <tr><td>HTML5</td><td>—</td><td>Document structure, forms, accessibility</td></tr>
+                <tr><td>CSS3</td><td>—</td><td>Design system, animations, responsive layouts</td></tr>
+                <tr><td>JavaScript (ES6+)</td><td>—</td><td>Application logic, state management, DOM manipulation</td></tr>
+                <tr><td>Chart.js</td><td>4.4.4</td><td>Doughnut and bar chart visualizations</td></tr>
+                <tr><td>Capacitor</td><td>8.3.1</td><td>Native Android wrapper with native APIs</td></tr>
+                <tr><td>Inter Font</td><td>—</td><td>Modern typography (Google Fonts)</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- PAGE 3: Dashboard Empty -->
+    <div class="page">
+        <h2>📊 Dashboard — Empty State</h2>
+        <p>When the app first loads, the dashboard shows zero balances and empty charts, ready for the user to start adding transactions.</p>
+        <div class="screenshot-section">
+            <img src="screenshots/01_empty_dashboard.png" alt="Empty Dashboard">
+            <p class="screenshot-caption">Figure 1: Dashboard empty state with summary cards showing ₹0 and empty charts</p>
+        </div>
+        <h3>Dashboard Components</h3>
+        <ul>
+            <li><strong>Summary Cards</strong> — Net Balance, Income, Expenses, and Savings Rate</li>
+            <li><strong>Spending by Category</strong> — Doughnut chart (appears when expenses are added)</li>
+            <li><strong>Income vs Expenses</strong> — 6-month trend bar chart</li>
+            <li><strong>Recent Transactions</strong> — Quick view of the last 5 entries</li>
+            <li><strong>Month Navigation</strong> — Browse data across different months</li>
+        </ul>
+    </div>
+
+    <!-- PAGE 4: Add Transaction -->
+    <div class="page">
+        <h2>➕ Add Transaction Modal</h2>
+        <p>Users can add transactions from any screen using the floating action button (purple "+" at bottom-right) or the "Add Transaction" button on the Transactions page.</p>
+        <div class="screenshot-section">
+            <img src="screenshots/02_add_modal.png" alt="Add Transaction Modal">
+            <p class="screenshot-caption">Figure 2: Add Transaction modal with type toggle, description, amount, category, and date fields</p>
+        </div>
+        <h3>Transaction Fields</h3>
+        <table>
+            <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td>Type</td><td>Toggle</td><td>Switch between Expense and Income</td></tr>
+                <tr><td>Description</td><td>Text</td><td>What the transaction is for (max 100 chars)</td></tr>
+                <tr><td>Amount</td><td>Number</td><td>Transaction amount in ₹</td></tr>
+                <tr><td>Category</td><td>Dropdown</td><td>14 categories with emoji icons</td></tr>
+                <tr><td>Date</td><td>Date picker</td><td>When the transaction occurred</td></tr>
+                <tr><td>Notes</td><td>Text</td><td>Optional additional details (max 150 chars)</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- PAGE 5: Dashboard with Data -->
+    <div class="page">
+        <h2>📊 Dashboard — With Data</h2>
+        <p>After adding transactions, the dashboard updates in real-time with financial summaries, charts, and trends.</p>
+        <div class="screenshot-section">
+            <img src="screenshots/03_dashboard_data.png" alt="Dashboard with Data">
+            <p class="screenshot-caption">Figure 3: Populated dashboard showing balance, income, expenses, spending chart, and trend chart</p>
+        </div>
+        <h3>Live Calculations</h3>
+        <ul>
+            <li><strong>Net Balance</strong> = Total Income − Total Expenses</li>
+            <li><strong>Savings Rate</strong> = (Income − Expenses) / Income × 100%</li>
+            <li><strong>Month-over-Month Trend</strong> — Compares current month to previous month</li>
+            <li><strong>Category Breakdown</strong> — Doughnut chart showing expense distribution</li>
+        </ul>
+    </div>
+
+    <!-- PAGE 6: Transactions List -->
+    <div class="page">
+        <h2>💸 Transactions List</h2>
+        <p>The Transactions view shows all recorded income and expenses with search and filter functionality.</p>
+        <div class="screenshot-section">
+            <img src="screenshots/04_transactions.png" alt="Transactions List">
+            <p class="screenshot-caption">Figure 4: Full transaction list with category icons, amounts, and dates</p>
+        </div>
+        <h3>Features</h3>
+        <ul>
+            <li><strong>Filter Tabs</strong> — View All, Income only, or Expenses only</li>
+            <li><strong>Search</strong> — Real-time text search across descriptions and categories</li>
+            <li><strong>Click to Edit</strong> — Tap any transaction to modify or delete it</li>
+            <li><strong>Color Coding</strong> — Green for income (+), Red for expenses (−)</li>
+            <li><strong>Category Icons</strong> — Emoji-based icons with matching colors</li>
+        </ul>
+    </div>
+
+    <!-- PAGE 7: Budgets -->
+    <div class="page">
+        <h2>🎯 Budget Tracking</h2>
+        <p>The Budgets view lets users set monthly spending limits for each expense category and track progress with visual indicators.</p>
+        <div class="screenshot-section">
+            <img src="screenshots/05_budgets.png" alt="Budgets View">
+            <p class="screenshot-caption">Figure 5: Budget cards with progress bars showing spending vs. limits per category</p>
+        </div>
+        <h3>Budget Status Colors</h3>
+        <table>
+            <thead><tr><th>Status</th><th>Color</th><th>When</th></tr></thead>
+            <tbody>
+                <tr><td>🟢 Safe</td><td>Green</td><td>Less than 70% of budget used</td></tr>
+                <tr><td>🟡 Warning</td><td>Amber</td><td>70% — 89% of budget used</td></tr>
+                <tr><td>🔴 Danger</td><td>Red</td><td>90% or more of budget used</td></tr>
+            </tbody>
+        </table>
+        <h3>Categories & Default Budgets</h3>
+        <table>
+            <thead><tr><th>Category</th><th>Default Limit</th></tr></thead>
+            <tbody>
+                <tr><td>🍽️ Food & Dining</td><td>₹8,000</td></tr>
+                <tr><td>🚗 Transport</td><td>₹3,000</td></tr>
+                <tr><td>🛍️ Shopping</td><td>₹5,000</td></tr>
+                <tr><td>💡 Bills & Utilities</td><td>₹4,000</td></tr>
+                <tr><td>🏥 Health</td><td>₹2,000</td></tr>
+                <tr><td>🎬 Entertainment</td><td>₹3,000</td></tr>
+                <tr><td>📚 Education</td><td>₹2,000</td></tr>
+                <tr><td>🏠 Rent & Housing</td><td>₹15,000</td></tr>
+                <tr><td>📦 Other</td><td>₹2,000</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- PAGE 8: Architecture & Data -->
+    <div class="page">
+        <h2>🏗️ Architecture & Data Storage</h2>
+
+        <h3>Application Architecture</h3>
+        <p>The app follows an IIFE (Immediately Invoked Function Expression) pattern with no framework dependencies. State changes trigger explicit re-renders.</p>
+        <table>
+            <thead><tr><th>Component</th><th>File</th><th>Size</th></tr></thead>
+            <tbody>
+                <tr><td>HTML Structure</td><td>index.html</td><td>16 KB</td></tr>
+                <tr><td>CSS Design System</td><td>styles.css</td><td>21 KB</td></tr>
+                <tr><td>Application Logic</td><td>app.js</td><td>19 KB</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Data Storage Format</h3>
+        <p>All data is stored as JSON strings in the browser's <strong>localStorage</strong> (or the Android app's private WebView storage).</p>
+        <table>
+            <thead><tr><th>Key</th><th>Format</th><th>Contains</th></tr></thead>
+            <tbody>
+                <tr><td>wp_transactions</td><td>JSON Array</td><td>All income and expense records</td></tr>
+                <tr><td>wp_budgets</td><td>JSON Object</td><td>Budget limits keyed by category ID</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Data Persistence</h3>
+        <table>
+            <thead><tr><th>Event</th><th>Data Survives?</th></tr></thead>
+            <tbody>
+                <tr><td>Close browser / app</td><td>✅ Yes</td></tr>
+                <tr><td>Restart device</td><td>✅ Yes</td></tr>
+                <tr><td>App update</td><td>✅ Yes</td></tr>
+                <tr><td>Clear browser data</td><td>❌ No</td></tr>
+                <tr><td>Uninstall app</td><td>❌ No</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Export / Import</h3>
+        <p>Users can export all data as a timestamped JSON backup file (<code>wealthpulse-backup-YYYY-MM-DD.json</code>) and import it back to restore data. Files are validated before import.</p>
+    </div>
+
+    <!-- PAGE 9: Android -->
+    <div class="page">
+        <h2>📱 Android App</h2>
+        <p>The web app is wrapped as a native Android application using <strong>Capacitor</strong> by Ionic. The same HTML/CSS/JS code runs inside a native Android WebView.</p>
+
+        <h3>Android Configuration</h3>
+        <table>
+            <thead><tr><th>Setting</th><th>Value</th></tr></thead>
+            <tbody>
+                <tr><td>Package ID</td><td>com.wealthpulse.app</td></tr>
+                <tr><td>App Name</td><td>WealthPulse</td></tr>
+                <tr><td>Min Android</td><td>API 22 (Android 5.1+)</td></tr>
+                <tr><td>APK Size</td><td>~4 MB</td></tr>
+                <tr><td>Status Bar</td><td>Dark (#0a0a12), light text</td></tr>
+                <tr><td>Splash Screen</td><td>2s duration, dark background</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Capacitor Plugins</h3>
+        <table>
+            <thead><tr><th>Plugin</th><th>Version</th><th>Purpose</th></tr></thead>
+            <tbody>
+                <tr><td>@capacitor/android</td><td>^8.3.1</td><td>Native Android runtime</td></tr>
+                <tr><td>@capacitor/status-bar</td><td>^8.0.2</td><td>Status bar color/style control</td></tr>
+                <tr><td>@capacitor/splash-screen</td><td>^8.0.1</td><td>Native splash screen</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Build Commands</h3>
+        <table>
+            <thead><tr><th>Command</th><th>What It Does</th></tr></thead>
+            <tbody>
+                <tr><td><code>npm run serve</code></td><td>Starts web server at localhost:8090</td></tr>
+                <tr><td><code>npm run build</code></td><td>Syncs web files to Android project</td></tr>
+                <tr><td><code>npm run open:android</code></td><td>Opens project in Android Studio</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Floating Action Button</h3>
+        <div class="screenshot-section">
+            <img src="screenshots/06_fab_modal.png" alt="FAB Button">
+            <p class="screenshot-caption">Figure 6: The floating "+" button opens the Add Transaction modal from any screen</p>
+        </div>
+    </div>
+
+</body>
+</html>
