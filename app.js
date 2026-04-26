@@ -435,13 +435,12 @@ function navigate(view) {
     if (mobBtn) mobBtn.classList.add('active');
     
     closeSidebar();
-    const fab = $('fab-add');
-    if (fab) {
-        if (view === 'dashboard' || view === 'transactions') {
-            fab.style.display = 'flex';
-        } else {
-            fab.style.display = 'flex'; // Keep it visible for the mobile nav structure
-        }
+    
+    // Hide FAB on dashboard since Quick Actions exist
+    if (view === 'dashboard') {
+        document.body.classList.add('hide-fab');
+    } else {
+        document.body.classList.remove('hide-fab');
     }
 
     if (view === 'dashboard') renderDashboard();
@@ -825,21 +824,44 @@ function renderDashboardBudgets() {
 }
 
 function renderSparklines(txns, prevTxns, savingsRate) {
-    // Very simple pseudo-sparklines drawn on canvas
-    const drawLine = (id, color, isBar) => {
+    const daysInMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate();
+    const incData = new Array(daysInMonth).fill(0);
+    const expData = new Array(daysInMonth).fill(0);
+    
+    txns.forEach(t => {
+        const d = parseInt(t.date.split('-')[2], 10) - 1;
+        if (d >= 0 && d < daysInMonth) {
+            if (t.type === 'income') incData[d] += t.amount;
+            if (t.type === 'expense') expData[d] += t.amount;
+        }
+    });
+
+    const balData = [];
+    let cum = 0;
+    for (let i=0; i<daysInMonth; i++) {
+        cum += (incData[i] - expData[i]);
+        balData.push(cum);
+    }
+    const minBal = Math.min(...balData, 0);
+    const adjustedBalData = balData.map(v => v - minBal);
+
+    const drawLine = (id, color, isBar, dataArr) => {
         const cvs = $(id); if (!cvs) return;
         const ctx = cvs.getContext('2d');
         const w = cvs.clientWidth, h = cvs.clientHeight;
         cvs.width = w; cvs.height = h;
         ctx.clearRect(0, 0, w, h);
         
-        const data = [0.2, 0.4, 0.3, 0.6, 0.5, 0.8, 0.9, 0.7, 1.0]; // Mock data
+        const data = dataArr && dataArr.some(v => v > 0) ? dataArr : [0.1, 0.1, 0.1, 0.1];
+        const max = Math.max(...data, 0.01);
+        const normData = data.map(v => v / max);
+        
         if (isBar) {
-            const barW = (w / data.length) - 2;
+            const barW = Math.max((w / normData.length) - 0.5, 1);
             ctx.fillStyle = color;
-            data.forEach((val, i) => {
-                const barH = val * h * 0.8;
-                ctx.fillRect(i * (w / data.length), h - barH, barW, barH);
+            normData.forEach((val, i) => {
+                const barH = Math.max(val * h * 0.8, 2); // min 2px height
+                ctx.fillRect(i * (w / normData.length), h - barH, barW, barH);
             });
         } else {
             ctx.beginPath();
@@ -847,17 +869,18 @@ function renderSparklines(txns, prevTxns, savingsRate) {
             ctx.lineWidth = 2;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            data.forEach((val, i) => {
-                const x = i * (w / (data.length - 1));
+            normData.forEach((val, i) => {
+                const x = i * (w / Math.max(normData.length - 1, 1));
                 const y = h - (val * h * 0.8) - 2;
                 if (i===0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
             });
             ctx.stroke();
         }
     };
-    drawLine('balance-sparkline', '#2ecc71', false);
-    drawLine('income-mini-chart', '#2ecc71', true);
-    drawLine('expense-mini-chart', '#e74c3c', true);
+    
+    drawLine('balance-sparkline', '#2ecc71', false, adjustedBalData);
+    drawLine('income-mini-chart', '#2ecc71', true, incData);
+    drawLine('expense-mini-chart', '#e74c3c', true, expData);
 
     // Savings Ring
     const cvs = $('savings-ring');

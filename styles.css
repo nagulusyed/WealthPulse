@@ -1098,6 +1098,7 @@ button.view-link {
         padding: 5rem 1rem calc(6rem + env(safe-area-inset-bottom, 0px));
         overflow-x: hidden;
     }
+    .circular-progress-container { width: 36px; height: 36px; right: 1rem; }
     .view-title { font-size: 1.5rem; }
     .charts-row { grid-template-columns: 1fr; }
     .form-grid { grid-template-columns: 1fr; }
@@ -1129,6 +1130,8 @@ button.view-link {
         align-items: center; z-index: 40;
         min-height: calc(64px + env(safe-area-inset-bottom, 0px));
     }
+    body.hide-fab .fab-center { display: none !important; }
+    body.hide-fab .mobile-nav { grid-template-columns: repeat(4, 1fr) !important; }
     .sidebar-overlay { z-index: 110; }
     .mobile-nav-item {
         display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem;
