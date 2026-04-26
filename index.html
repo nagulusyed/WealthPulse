@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="description" content="WealthPulse — A beautiful personal finance tracker to manage income, expenses, and budgets.">
     <title>WealthPulse — Personal Finance Tracker</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -296,7 +296,7 @@
                         </div>
                         <div class="category-legend" id="category-legend"></div>
                     </div>
-                    <button class="view-link" onclick="navigate('reports')">View full report →</button>
+                    <button class="view-link" onclick="openReportsView()">View full report →</button>
                 </div>
 
                 <!-- Right Column: Quick Actions & Insight -->
@@ -314,7 +314,7 @@
                     <div class="chart-card insight-card">
                         <h3 class="chart-title" style="font-size:0.9rem; color:#a0aec0;">Insight</h3>
                         <p class="insight-text" id="insight-text">You spent 18% more on Food compared to last month.</p>
-                        <button class="view-link" onclick="navigate('reports')">View details →</button>
+                        <button class="view-link" onclick="openReportsView()">View details →</button>
                     </div>
                 </div>
             </div>
@@ -504,7 +504,7 @@
                     Add Person
                 </button>
             </div>
-            <div id="people-list" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap:1rem;"></div>
+            <div id="people-list" class="people-grid"></div>
             <div id="people-empty" style="display:none; text-align:center; padding:3rem 0;"><p class="empty-title">No people added yet.</p></div>
         </section>
 
@@ -568,7 +568,7 @@
 
     <!-- ========== ADD / EDIT TRANSACTION MODAL ========== -->
     <div class="modal-overlay" id="txn-modal" role="dialog" aria-modal="true" aria-label="Transaction form">
-        <div class="modal-content modal-large">
+        <div class="modal-content modal-large entry-modal entry-modal-personal">
             <h2 class="modal-title" id="modal-title">Add Transaction</h2>
             <form id="txn-form" autocomplete="off">
                 <!-- Type Toggle -->
@@ -638,7 +638,7 @@
     </div>
     
     <div class="modal-overlay" id="modal-add-group">
-        <div class="modal-content modal-small">
+        <div class="modal-content modal-small group-modal">
             <h2 class="modal-title" id="ag-modal-title">New Group</h2>
             <form id="ag-form" autocomplete="off">
                 <div class="form-group full-width">
@@ -648,7 +648,7 @@
                 </div>
                 <div class="form-group full-width" style="margin-top:1rem;">
                     <label>Members</label>
-                    <div id="ag-members-list" class="members-select-container" style="max-height:150px; overflow-y:auto; border:1px solid var(--border-subtle); padding:0.5rem; border-radius:var(--radius-sm); background:var(--bg-input);"></div>
+                    <div id="ag-members-list" class="members-select-container"></div>
                     <div class="pin-error" id="ag-members-err" style="display:none;" style="display:none; text-align:left; margin-top:4px;"></div>
                 </div>
                 <div class="modal-actions" style="margin-top:1.5rem">
@@ -682,7 +682,7 @@
     </div>
 
     <div class="modal-overlay" id="modal-add-expense">
-        <div class="modal-content modal-large">
+        <div class="modal-content modal-large entry-modal entry-modal-group">
             <h2 class="modal-title" id="ae-modal-title">Add Expense</h2>
             <form id="ae-form" autocomplete="off">
                 <input type="hidden" id="ae-id">

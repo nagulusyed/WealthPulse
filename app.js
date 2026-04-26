@@ -415,12 +415,18 @@ function initDefaultBudgets() {
 
 // ── Navigation ── (exposed globally for inline onclick handlers)
 window.navigate = function(view) { navigate(view); };
+window.openReportsView = function() { navigate('reports'); };
 function navigate(view) {
+    const target = $('view-' + view);
+    if (!target) {
+        console.warn(`Unknown view: ${view}`);
+        return;
+    }
     currentView = view;
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.nav-item[data-view]').forEach(n => n.classList.remove('active'));
     document.querySelectorAll('.mobile-nav-item[data-view]').forEach(n => n.classList.remove('active'));
-    $('view-' + view).classList.add('active');
+    target.classList.add('active');
     
     const navBtn = document.querySelector(`.nav-item[data-view="${view}"]`);
     if (navBtn) navBtn.classList.add('active');
@@ -514,7 +520,9 @@ function setupEvents() {
     document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
         btn.addEventListener('click', () => navigate(btn.dataset.view));
     });
-    menuBtn.addEventListener('click', () => {
+    menuBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         sidebar.classList.toggle('open');
         toggleOverlay(sidebar.classList.contains('open'));
     });
@@ -582,12 +590,9 @@ function setupEvents() {
     $('confirm-ok').addEventListener('click', () => { if (confirmCallback) confirmCallback(); closeConfirm(); });
     $('confirm-modal').addEventListener('click', e => { if (e.target === $('confirm-modal')) closeConfirm(); });
     $('clear-data-btn').addEventListener('click', () => {
-        showConfirm('Reset all data? This cannot be undone.', () => {
-            transactions = []; budgets = {}; initDefaultBudgets();
-            localStorage.removeItem('wp_people');
-            localStorage.removeItem('wp_groups');
-            localStorage.removeItem('wp_group_expenses');
-            save(); refreshView();
+        showConfirm('Reset everything? This will delete all transactions, budgets, people, groups, expenses, PIN, and recovery settings.', () => {
+            resetAllAppData();
+            window.location.reload();
         });
     });
     // Export / Import
@@ -607,11 +612,6 @@ function setupEvents() {
         $('lock-screen').classList.remove('hidden');
     });
     
-    // Sidebar links fix for dynamic ones not bound yet
-    document.querySelectorAll('.nav-item[data-view], .mobile-nav-item[data-view]').forEach(btn => {
-        btn.addEventListener('click', () => navigate(btn.dataset.view));
-    });
-
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') { closeTxnModal(); closeConfirm(); }
     });
@@ -638,6 +638,22 @@ function getMonthTxns(date) { const key = getMonthKey(date || selectedMonth); re
 function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions)); }
 function saveTransactions() { save(); }
 function saveBudgets() { localStorage.setItem(BUDGET_KEY, JSON.stringify(budgets)); }
+
+function resetAllAppData() {
+    Object.keys(localStorage)
+        .filter(key => key.startsWith('wp_'))
+        .forEach(key => localStorage.removeItem(key));
+
+    transactions = [];
+    budgets = {};
+    pinInput = '';
+    pinTemp = '';
+    isPrivate = false;
+    currentGroupId = null;
+    currentExpenseId = null;
+    editingTxnId = null;
+    currentView = 'dashboard';
+}
 
 // ── Categories ──
 function getCat(type, catId) { return (CATEGORIES[type] || []).find(c => c.id === catId) || { name: 'Other', emoji: '📦', color: '#94a3b8' }; }
@@ -708,8 +724,14 @@ function refreshView() {
     else if (currentView === 'transactions') renderTransactions();
     else if (currentView === 'budgets') renderBudgets();
     else if (currentView === 'groups') renderGroupsList();
+    else if (currentView === 'people') renderPeopleList();
     else if (currentView === 'settle-up') renderSettleUpView();
+    else if (currentView === 'group-detail') renderGroupDetail(currentGroupId);
     else if (currentView === 'reports') renderReports();
+
+    if (currentView !== 'dashboard') {
+        renderDashboardGroupsWidget();
+    }
 }
 
 // ── DASHBOARD ──
@@ -1213,7 +1235,7 @@ function editPerson(id, newName) {
         if (words.length > 1) initials += words[words.length - 1][0];
         p.initials = initials.toUpperCase();
         savePeople(people);
-        renderPeopleList();
+        refreshView();
     }
 }
 
@@ -1230,7 +1252,7 @@ function deletePerson(id) {
     savePeople(people);
     closeModal('modal-add-person');
     closeModal('modal-edit-person');
-    renderPeopleList();
+    refreshView();
 }
 
 // C - Groups CRUD
@@ -1327,7 +1349,7 @@ function deleteGroupExpense(id) {
         exps = exps.filter(e => e.id !== id);
         saveGroupExpenses(exps);
         closeModal('modal-expense-detail');
-        renderGroupDetail(currentGroupId);
+        refreshView();
         showToast('Expense deleted', 'success');
     });
 }
@@ -1778,8 +1800,9 @@ function renderPeopleList() {
             <div class="avatar" style="background:${p.color}">${p.initials}</div>
             <div class="person-details">
                 <div class="person-name">${p.name}</div>
+                <div class="person-meta">Split member</div>
             </div>
-            <button class="menu-btn" onclick="openEditPersonModal('${p.id}')">
+            <button class="person-edit-btn" aria-label="Edit ${p.name}" onclick="openEditPersonModal('${p.id}')">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 3a2 2 0 112.8 2.8L5 14H2v-3L11 3z"></path></svg>
             </button>
         `;
@@ -1870,12 +1893,13 @@ function renderDashboardGroupsWidget() {
     if(trans.length === 0) slist.innerHTML = '<p class="empty-title" style="font-size:0.875rem;">No pending settlements.</p>';
     trans.forEach(t => {
         const p = getPersonById(t.from === 'self' ? t.to : t.from);
+        if (!p) return; // Prevent crash if person was deleted
         const isOwe = t.from === 'self';
         const div = document.createElement('div');
         div.className = 'settle-item';
         div.innerHTML = `
             <div class="avatar avatar-sm" style="background:${p.color}">${p.initials}</div>
-            <div style="flex:1; font-size:0.875rem;">${isOwe ? 'You owe '+p.name : p.name+' owes you'}</div>
+            <div style="flex:1; font-size:0.875rem;">${isOwe ? 'You owe '+esc(p.name) : esc(p.name)+' owes you'}</div>
             <div style="font-weight:600; color:var(--accent-${isOwe ? 'red' : 'green'});">${fmtINR(t.amount)}</div>
         `;
         slist.appendChild(div);
@@ -1894,7 +1918,12 @@ function openAddGroupModal() {
     people.forEach(p => {
         const div = document.createElement('label');
         div.className = 'member-checkbox';
-        div.innerHTML = `<input type="checkbox" value="${p.id}"> <div class="avatar avatar-sm" style="background:${p.color}">${p.initials}</div> <span>${p.name}</span>`;
+        div.innerHTML = `
+            <input type="checkbox" value="${p.id}">
+            <div class="avatar avatar-sm" style="background:${p.color}">${p.initials}</div>
+            <span class="member-name">${p.name}</span>
+            <span class="member-checkmark"></span>
+        `;
         ml.appendChild(div);
     });
     $('modal-add-group').classList.add('visible');
@@ -1913,7 +1942,12 @@ function openEditGroupModal(id) {
         const div = document.createElement('label');
         div.className = 'member-checkbox';
         const checked = g.memberIds.includes(p.id) ? 'checked' : '';
-        div.innerHTML = `<input type="checkbox" value="${p.id}" ${checked}> <div class="avatar avatar-sm" style="background:${p.color}">${p.initials}</div> <span>${p.name}</span>`;
+        div.innerHTML = `
+            <input type="checkbox" value="${p.id}" ${checked}>
+            <div class="avatar avatar-sm" style="background:${p.color}">${p.initials}</div>
+            <span class="member-name">${p.name}</span>
+            <span class="member-checkmark"></span>
+        `;
         ml.appendChild(div);
     });
     $('modal-edit-group').classList.add('visible');
@@ -2115,10 +2149,9 @@ function initGroupsFeature() {
             return;
         }
         
-        addGroup(name, checks);
+        const newGroup = addGroup(name, checks);
         closeModal('modal-add-group');
-        if (currentView === 'groups') renderGroupsList();
-        else if (currentView === 'dashboard') renderDashboard();
+        if (newGroup) refreshView();
     });
     
     if($('eg-form')) $('eg-form').addEventListener('submit', (e) => {
@@ -2146,6 +2179,7 @@ function initGroupsFeature() {
         if (id) editPerson(id, name);
         else addPerson(name);
         closeModal('modal-add-person');
+        refreshView();
     });
     
     if($('ap-delete-btn')) $('ap-delete-btn').addEventListener('click', () => {
@@ -2190,18 +2224,16 @@ function initGroupsFeature() {
                 finalSplits = calculateEqualSplits(mIds, amt);
             }
             
-            if (id) editGroupExpense(id, desc, amt, pb, date, method, finalSplits, cat);
-            else addGroupExpense(gId, desc, amt, pb, date, method, finalSplits, cat);
+            const savedExpense = id
+                ? editGroupExpense(id, desc, amt, pb, date, method, finalSplits, cat)
+                : addGroupExpense(gId, desc, amt, pb, date, method, finalSplits, cat);
+            if (!savedExpense) {
+                showToast('Check the expense details and split totals.', 'error');
+                return;
+            }
             
             closeModal('modal-add-expense');
-            
-            if (currentView === 'dashboard') {
-                renderDashboard();
-            } else if (currentView === 'group-detail') {
-                renderGroupDetail(currentGroupId);
-            } else if (currentView === 'groups') {
-                renderGroupsList();
-            }
+            refreshView();
         });
     }
     
@@ -2228,6 +2260,7 @@ function initGroupsFeature() {
             const amt = $('sm-amount').value;
             markSettlementPaid(from, to, group, method, amt);
             closeModal('modal-settle-payment');
+            refreshView();
         });
     }
     
