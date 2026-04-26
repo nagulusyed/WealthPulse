@@ -546,6 +546,11 @@ User Action → Event Handler → Update State → Save to localStorage → Re-r
 
 ## Changelog
 
+### v2.1.1 — Dashboard Sync Hotfix (2026-04-26)
+
+**Fixes:**
+- 🐛 **Dashboard Crash Fix** — Fixed a silent rendering crash in the "Pending Settlements" widget caused by missing person records. This crash was preventing the dashboard from updating budget and group statuses after logging a new transaction or split bill.
+
 ### v2.1.0 — Reports, CSS Polish & Stability Fixes (2026-04-26)
 
 **New Features & Fixes:**
