@@ -62,10 +62,23 @@ let pinMode = 'enter'; // 'create', 'confirm', 'enter', 'change-old', 'change-ne
 let pinTemp = '';       // Temp storage during create/change flows
 
 async function hashPin(pin) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode('wp_salt_' + pin);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    const str = 'wp_salt_' + pin;
+    if (window.crypto && window.crypto.subtle) {
+        try {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(str);
+            const hash = await crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch(e) { /* fallback below */ }
+    }
+    // Simple fallback hash for non-secure contexts
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return 'fb_' + Math.abs(hash).toString(16);
 }
 
 function hasPinSet() {
@@ -204,11 +217,22 @@ function removePinDigit() {
 }
 
 async function hashSecurityAnswer(answer) {
-    const normalized = answer.trim().toLowerCase();
-    const encoder = new TextEncoder();
-    const data = encoder.encode('wp_sec_q_salt_' + normalized);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    const str = 'wp_sec_q_salt_' + answer.trim().toLowerCase();
+    if (window.crypto && window.crypto.subtle) {
+        try {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(str);
+            const hash = await crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch(e) { /* fallback below */ }
+    }
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return 'fb_' + Math.abs(hash).toString(16);
 }
 
 function showSecQSetup() {
@@ -377,8 +401,8 @@ initPinScreen();
 // ── Greeting ──
 function setGreeting() {
     const h = new Date().getHours();
-    const g = h < 12 ? 'Good morning ☀️' : h < 17 ? 'Good afternoon 🚀' : 'Good evening 🌙';
-    $('dashboard-greeting').textContent = g;
+    const g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+    $('dashboard-greeting').textContent = g + ', here is your overview.';
 }
 
 // ── Default Budgets ──
@@ -389,21 +413,28 @@ function initDefaultBudgets() {
     saveBudgets();
 }
 
-// ── Navigation ──
+// ── Navigation ── (exposed globally for inline onclick handlers)
+window.navigate = function(view) { navigate(view); };
 function navigate(view) {
     currentView = view;
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.nav-item[data-view]').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.mobile-nav-item[data-view]').forEach(n => n.classList.remove('active'));
     $('view-' + view).classList.add('active');
+    
     const navBtn = document.querySelector(`.nav-item[data-view="${view}"]`);
     if (navBtn) navBtn.classList.add('active');
+    
+    const mobBtn = document.querySelector(`.mobile-nav-item[data-view="${view}"]`);
+    if (mobBtn) mobBtn.classList.add('active');
+    
     closeSidebar();
     const fab = $('fab-add');
     if (fab) {
         if (view === 'dashboard' || view === 'transactions') {
             fab.style.display = 'flex';
         } else {
-            fab.style.display = 'none';
+            fab.style.display = 'flex'; // Keep it visible for the mobile nav structure
         }
     }
 
@@ -414,6 +445,7 @@ function navigate(view) {
     else if (view === 'people') renderPeopleList();
     else if (view === 'settle-up') renderSettleUpView();
     else if (view === 'group-detail') renderGroupDetail(currentGroupId);
+    else if (view === 'reports') renderReports();
 }
 
 // ── Back Button Handler (Capacitor native + browser fallback) ──
@@ -490,9 +522,8 @@ function setupEvents() {
     $('month-next').addEventListener('click', () => { selectedMonth.setMonth(selectedMonth.getMonth() + 1); updateMonthLabels(); renderDashboard(); });
     $('budget-month-prev').addEventListener('click', () => { selectedMonth.setMonth(selectedMonth.getMonth() - 1); updateMonthLabels(); renderBudgets(); });
     $('budget-month-next').addEventListener('click', () => { selectedMonth.setMonth(selectedMonth.getMonth() + 1); updateMonthLabels(); renderBudgets(); });
-    $('see-all-btn').addEventListener('click', () => navigate('transactions'));
     $('add-transaction-btn').addEventListener('click', () => openTxnModal());
-        $('fab-add').addEventListener('click', () => {
+    $('fab-add').addEventListener('click', () => {
         $('fab-add').classList.toggle('active');
         $('fab-menu').classList.toggle('active');
     });
@@ -516,6 +547,17 @@ function setupEvents() {
         $('fab-menu').classList.remove('active');
         openAddExpenseModal(); // no param = select group
     });
+    
+    // Quick Actions
+    const qaExp = $('qa-expense');
+    if (qaExp) qaExp.addEventListener('click', () => openTxnModal(null, 'expense'));
+    const qaInc = $('qa-income');
+    if (qaInc) qaInc.addEventListener('click', () => openTxnModal(null, 'income'));
+    const qaSet = $('qa-settle');
+    if (qaSet) qaSet.addEventListener('click', () => navigate('settle-up'));
+    const qaSpl = $('qa-split');
+    if (qaSpl) qaSpl.addEventListener('click', () => openAddExpenseModal());
+
     // Txn filters
     document.querySelectorAll('#view-transactions .filter-tab').forEach(tab => {
         tab.addEventListener('click', () => {
@@ -540,7 +582,13 @@ function setupEvents() {
     $('confirm-ok').addEventListener('click', () => { if (confirmCallback) confirmCallback(); closeConfirm(); });
     $('confirm-modal').addEventListener('click', e => { if (e.target === $('confirm-modal')) closeConfirm(); });
     $('clear-data-btn').addEventListener('click', () => {
-        showConfirm('Reset all data? This cannot be undone.', () => { transactions = []; budgets = {}; initDefaultBudgets(); save(); refreshView(); });
+        showConfirm('Reset all data? This cannot be undone.', () => {
+            transactions = []; budgets = {}; initDefaultBudgets();
+            localStorage.removeItem('wp_people');
+            localStorage.removeItem('wp_groups');
+            localStorage.removeItem('wp_group_expenses');
+            save(); refreshView();
+        });
     });
     // Export / Import
     $('export-btn').addEventListener('click', exportData);
@@ -549,14 +597,6 @@ function setupEvents() {
     // Change PIN
     $('change-pin-btn').addEventListener('click', () => {
         closeSidebar();
-    const fab = $('fab-add');
-    if (fab) {
-        if (view === 'dashboard' || view === 'transactions') {
-            fab.style.display = 'flex';
-        } else {
-            fab.style.display = 'none';
-        }
-    }
         pinMode = 'change-old';
         pinInput = '';
         updatePinDots();
@@ -566,6 +606,12 @@ function setupEvents() {
         $('lock-screen').style.display = '';
         $('lock-screen').classList.remove('hidden');
     });
+    
+    // Sidebar links fix for dynamic ones not bound yet
+    document.querySelectorAll('.nav-item[data-view], .mobile-nav-item[data-view]').forEach(btn => {
+        btn.addEventListener('click', () => navigate(btn.dataset.view));
+    });
+
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') { closeTxnModal(); closeConfirm(); }
     });
@@ -590,6 +636,7 @@ function getMonthTxns(date) { const key = getMonthKey(date || selectedMonth); re
 
 // ── Storage ──
 function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions)); }
+function saveTransactions() { save(); }
 function saveBudgets() { localStorage.setItem(BUDGET_KEY, JSON.stringify(budgets)); }
 
 // ── Categories ──
@@ -611,12 +658,12 @@ function setModalType(type) {
     $('type-income').classList.toggle('active', type === 'income');
     populateCategories();
 }
-function openTxnModal(txn) {
+function openTxnModal(txn, defaultType) {
     editingTxnId = txn ? txn.id : null;
     $('modal-title').textContent = txn ? 'Edit Transaction' : 'Add Transaction';
     $('txn-save').textContent = txn ? 'Save Changes' : 'Add Transaction';
     $('txn-delete').style.display = txn ? 'inline-flex' : 'none';
-    setModalType(txn ? txn.type : 'expense');
+    setModalType(txn ? txn.type : (defaultType || 'expense'));
     $('txn-description').value = txn ? txn.description : '';
     $('txn-amount').value = txn ? txn.amount : '';
     $('txn-date').value = txn ? txn.date : new Date().toISOString().split('T')[0];
@@ -646,25 +693,48 @@ function saveTxn() {
 function showConfirm(text, cb) { $('confirm-text').textContent = text; confirmCallback = cb; $('confirm-modal').classList.add('visible'); }
 function closeConfirm() { $('confirm-modal').classList.remove('visible'); confirmCallback = null; }
 
-function refreshView() { if (currentView === 'dashboard') renderDashboard(); else if (currentView === 'transactions') renderTransactions(); else renderBudgets(); }
+let isPrivate = false;
+window.togglePrivacy = function() {
+    isPrivate = !isPrivate;
+    localStorage.setItem('wp_privacy_mode', isPrivate ? '1' : '0');
+    const targets = document.querySelectorAll('.card-amount, .txn-amount, .split-val, .budget-amounts, .budget-percent, .balance-badge, .spent-val');
+    targets.forEach(el => el.classList.toggle('private-blur', isPrivate));
+    const eyeIcons = document.querySelectorAll('.eye-icon');
+    eyeIcons.forEach(icon => icon.style.opacity = isPrivate ? '0.4' : '0.8');
+};
+
+function refreshView() {
+    if (currentView === 'dashboard') renderDashboard();
+    else if (currentView === 'transactions') renderTransactions();
+    else if (currentView === 'budgets') renderBudgets();
+    else if (currentView === 'groups') renderGroupsList();
+    else if (currentView === 'settle-up') renderSettleUpView();
+    else if (currentView === 'reports') renderReports();
+}
 
 // ── DASHBOARD ──
 function renderDashboard() {
     const txns = getMonthTxns();
-    const income = txns.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-    const expense = txns.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    const incomeTxns = txns.filter(t => t.type === 'income');
+    const expenseTxns = txns.filter(t => t.type === 'expense');
+    const income = incomeTxns.reduce((s, t) => s + t.amount, 0);
+    const expense = expenseTxns.reduce((s, t) => s + t.amount, 0);
     const balance = income - expense;
     const savingsRate = income > 0 ? Math.round(((income - expense) / income) * 100) : 0;
 
     $('balance-amount').textContent = fmt(balance);
-    $('balance-amount').style.color = balance >= 0 ? '#a78bfa' : '#f87171';
+    $('balance-amount').style.color = '#fff';
     $('income-amount').textContent = fmt(income);
     $('expense-amount').textContent = fmt(expense);
-    $('income-count').textContent = txns.filter(t => t.type === 'income').length + ' transactions';
-    $('expense-count').textContent = txns.filter(t => t.type === 'expense').length + ' transactions';
-    $('savings-rate').textContent = savingsRate + '%';
-    $('savings-rate').style.color = savingsRate >= 20 ? '#34d399' : savingsRate >= 0 ? '#fbbf24' : '#f87171';
-
+    
+    // Unique sources/categories
+    const incomeSources = new Set(incomeTxns.map(t => t.category)).size;
+    const expenseCats = new Set(expenseTxns.map(t => t.category)).size;
+    $('income-sources-count').textContent = incomeSources;
+    $('expense-cat-count').textContent = expenseCats;
+    
+    $('savings-rate').textContent = savingsRate.toFixed(1) + '%';
+    
     // Trend
     const prevMonth = new Date(selectedMonth); prevMonth.setMonth(prevMonth.getMonth() - 1);
     const prevTxns = getMonthTxns(prevMonth);
@@ -674,32 +744,165 @@ function renderDashboard() {
     if (prevTxns.length > 0) {
         trendEl.textContent = (diff >= 0 ? '↑ ' : '↓ ') + fmt(Math.abs(diff)) + ' vs last month';
         trendEl.className = 'card-trend ' + (diff >= 0 ? 'positive' : 'negative');
-    } else trendEl.textContent = '';
+    } else {
+        trendEl.textContent = '';
+    }
 
+    renderSparklines(txns, prevTxns, savingsRate);
     renderCategoryChart(txns);
     renderTrendChart();
     renderRecentList(txns);
     renderDashboardGroupsWidget();
+    renderDashboardBudgets();
+}
+
+function renderDashboardGroupsWidget() {
+    const expenses = getGroupExpenses();
+    let owe = 0;
+    let owedTo = 0;
+    
+    // Very simplified split logic for dashboard summary
+    expenses.forEach(ex => {
+        if (!ex.splits || !ex.splits['self']) return;
+        const mySplit = ex.splits['self'];
+        const myPaid = ex.paidBy === 'self' ? ex.amount : 0;
+        const diff = myPaid - mySplit;
+        if (diff < 0) owe += Math.abs(diff);
+        else owedTo += diff;
+    });
+    
+    const oweEl = $('dash-you-owe');
+    const owedEl = $('dash-owed-to-you');
+    if (oweEl) oweEl.textContent = '₹' + owe.toFixed(0);
+    if (owedEl) owedEl.textContent = '₹' + owedTo.toFixed(0);
+}
+
+function renderDashboardBudgets() {
+    const list = $('budget-mini-list');
+    if (!list) return;
+    list.innerHTML = '';
+    const monthTxns = getMonthTxns();
+    const sortedCats = CATEGORIES.expense.sort((a,b) => (budgets[b.id]||0) - (budgets[a.id]||0)).slice(0, 2);
+    
+    sortedCats.forEach(cat => {
+        const spent = monthTxns.filter(t => t.type === 'expense' && t.category === cat.id).reduce((s, t) => s + t.amount, 0);
+        const limit = budgets[cat.id] || 0;
+        const pct = limit > 0 ? Math.min(Math.round((spent / limit) * 100), 100) : 0;
+        
+        list.innerHTML += `
+            <div style="margin-bottom:0.75rem;">
+                <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:0.25rem;">
+                    <span style="color:#fff;font-weight:500;display:flex;align-items:center;gap:0.5rem;"><span style="font-size:1rem;">${cat.emoji}</span> ${cat.name}</span>
+                    <span style="color:var(--text-muted);">${fmt(spent)} / ${fmt(limit)} <span style="color:#fff;font-weight:600;margin-left:0.5rem;">${pct}%</span></span>
+                </div>
+                <div style="height:6px;background:var(--border-subtle);border-radius:3px;overflow:hidden;">
+                    <div style="height:100%;background:${pct >= 90 ? 'var(--accent-error)' : pct >= 75 ? 'var(--accent-warning)' : 'var(--accent-success)'};width:${pct}%"></div>
+                </div>
+            </div>`;
+    });
+}
+
+function renderSparklines(txns, prevTxns, savingsRate) {
+    // Very simple pseudo-sparklines drawn on canvas
+    const drawLine = (id, color, isBar) => {
+        const cvs = $(id); if (!cvs) return;
+        const ctx = cvs.getContext('2d');
+        const w = cvs.clientWidth, h = cvs.clientHeight;
+        cvs.width = w; cvs.height = h;
+        ctx.clearRect(0, 0, w, h);
+        
+        const data = [0.2, 0.4, 0.3, 0.6, 0.5, 0.8, 0.9, 0.7, 1.0]; // Mock data
+        if (isBar) {
+            const barW = (w / data.length) - 2;
+            ctx.fillStyle = color;
+            data.forEach((val, i) => {
+                const barH = val * h * 0.8;
+                ctx.fillRect(i * (w / data.length), h - barH, barW, barH);
+            });
+        } else {
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            data.forEach((val, i) => {
+                const x = i * (w / (data.length - 1));
+                const y = h - (val * h * 0.8) - 2;
+                if (i===0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+        }
+    };
+    drawLine('balance-sparkline', '#2ecc71', false);
+    drawLine('income-mini-chart', '#2ecc71', true);
+    drawLine('expense-mini-chart', '#e74c3c', true);
+
+    // Savings Ring
+    const cvs = $('savings-ring');
+    if (cvs) {
+        const ctx = cvs.getContext('2d');
+        const w = cvs.clientWidth, h = cvs.clientHeight;
+        cvs.width = w; cvs.height = h;
+        const cx = w/2, cy = h/2, r = Math.min(w,h)/2 - 3;
+        ctx.clearRect(0, 0, w, h);
+        // BG Ring
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2*Math.PI);
+        ctx.strokeStyle = '#2d3748'; ctx.lineWidth = 4; ctx.stroke();
+        // Progress Ring
+        ctx.beginPath(); ctx.arc(cx, cy, r, -Math.PI/2, (-Math.PI/2) + (2*Math.PI*(savingsRate/100)));
+        ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.stroke();
+    }
 }
 
 function renderCategoryChart(txns) {
     const expenses = txns.filter(t => t.type === 'expense');
     const catData = {};
-    expenses.forEach(t => { catData[t.category] = (catData[t.category] || 0) + t.amount; });
-    const cats = Object.keys(catData);
-    const empty = $('category-empty');
-    if (cats.length === 0) { empty.classList.add('visible'); if (categoryChart) { categoryChart.destroy(); categoryChart = null; } return; }
-    empty.classList.remove('visible');
+    let totalSpent = 0;
+    expenses.forEach(t => { catData[t.category] = (catData[t.category] || 0) + t.amount; totalSpent += t.amount; });
+    
+    // Sort by amount descending
+    const cats = Object.keys(catData).sort((a,b) => catData[b] - catData[a]);
+    
+    if (cats.length === 0) { 
+        if (categoryChart) { categoryChart.destroy(); categoryChart = null; } 
+        $('cat-spent-val').textContent = '₹0';
+        $('category-legend').innerHTML = '<p style="color:var(--text-muted);font-size:0.8rem;text-align:center;padding:1rem;">No expenses</p>';
+        return; 
+    }
+    
+    $('cat-spent-val').textContent = '₹' + (totalSpent >= 1000 ? (totalSpent/1000).toFixed(0) + 'k' : totalSpent);
+
     const labels = cats.map(c => getCat('expense', c).name);
     const data = cats.map(c => catData[c]);
     const colors = cats.map(c => getCat('expense', c).color);
+    
+    // Custom Legend
+    const legendEl = $('category-legend');
+    legendEl.innerHTML = '';
+    cats.slice(0, 5).forEach(c => {
+        const cat = getCat('expense', c);
+        const pct = Math.round((catData[c] / totalSpent) * 100);
+        legendEl.innerHTML += `
+            <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.75rem;">
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <div style="width:8px; height:8px; border-radius:50%; background:${cat.color}"></div>
+                    <span style="color:#fff; font-weight:500;">${cat.name}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <span style="color:var(--text-muted);">${fmt(catData[c])}</span>
+                    <span style="color:#fff; font-weight:600; width:30px; text-align:right;">${pct}%</span>
+                </div>
+            </div>`;
+    });
+
     if (categoryChart) categoryChart.destroy();
     categoryChart = new Chart($('category-chart'), {
         type: 'doughnut',
-        data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, hoverOffset: 6 }] },
+        data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, hoverOffset: 4 }] },
         options: {
-            responsive: true, cutout: '70%',
-            plugins: { legend: { position: 'bottom', labels: { color: '#9d97b5', padding: 12, usePointStyle: true, pointStyleWidth: 8, font: { size: 11 } } } }
+            responsive: true, maintainAspectRatio: false, cutout: '80%',
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            animation: { duration: 800, easing: 'easeOutQuart' }
         }
     });
 }
@@ -710,23 +913,29 @@ function renderTrendChart() {
     const labels = months.map(m => m.toLocaleDateString('en-US', { month: 'short' }));
     const incomeData = months.map(m => getMonthTxns(m).filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0));
     const expenseData = months.map(m => getMonthTxns(m).filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0));
+    
     if (trendChart) trendChart.destroy();
     trendChart = new Chart($('trend-chart'), {
         type: 'bar',
         data: {
             labels,
             datasets: [
-                { label: 'Income', data: incomeData, backgroundColor: 'rgba(52, 211, 153, 0.7)', borderRadius: 6, barPercentage: 0.4 },
-                { label: 'Expenses', data: expenseData, backgroundColor: 'rgba(248, 113, 113, 0.7)', borderRadius: 6, barPercentage: 0.4 }
+                { label: 'Income', data: incomeData, backgroundColor: '#2ecc71', borderRadius: 2, barPercentage: 0.6, categoryPercentage: 0.4 },
+                { label: 'Expense', data: expenseData, backgroundColor: '#e74c3c', borderRadius: 2, barPercentage: 0.6, categoryPercentage: 0.4 }
             ]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
             scales: {
-                x: { grid: { display: false }, ticks: { color: '#5e5880', font: { size: 11 } } },
-                y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#5e5880', font: { size: 11 }, callback: v => '₹' + (v / 1000) + 'k' } }
+                x: { grid: { display: false, drawBorder: false }, ticks: { color: '#a0aec0', font: { family: 'Inter', size: 10 } } },
+                y: { 
+                    grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, 
+                    ticks: { color: '#718096', font: { family: 'Inter', size: 10 }, callback: v => '₹' + (v >= 1000 ? (v / 1000) + 'k' : v), maxTicksLimit: 5 } 
+                }
             },
-            plugins: { legend: { labels: { color: '#9d97b5', usePointStyle: true, pointStyleWidth: 8, padding: 16, font: { size: 11 } } } }
+            plugins: {
+                legend: { position: 'bottom', align: 'start', labels: { color: '#a0aec0', usePointStyle: true, pointStyleWidth: 8, boxWidth: 8, padding: 20, font: { family: 'Inter', size: 11 } } }
+            }
         }
     });
 }
@@ -734,10 +943,12 @@ function renderTrendChart() {
 function renderRecentList(txns) {
     const recent = txns.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
     const list = $('recent-list');
-    const empty = $('recent-empty');
+    if (!list) return;
     list.innerHTML = '';
-    if (recent.length === 0) { empty.classList.add('visible'); return; }
-    empty.classList.remove('visible');
+    if (recent.length === 0) {
+        list.innerHTML = '<p style="color:var(--text-muted); font-size:0.8rem; padding:1rem 0; text-align:center;">No transactions yet</p>';
+        return;
+    }
     recent.forEach(t => list.appendChild(createTxnEl(t)));
 }
 
@@ -804,6 +1015,67 @@ function renderBudgets() {
     });
 }
 
+// ── REPORTS VIEW ──
+function renderReports() {
+    const monthTxns = getMonthTxns();
+    const expenses = monthTxns.filter(t => t.type === 'expense');
+    const totalSpent = expenses.reduce((s, t) => s + t.amount, 0);
+    const totalIncome = monthTxns.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const prevMonth = new Date(selectedMonth);
+    prevMonth.setMonth(prevMonth.getMonth() - 1);
+    const prevTxns = getMonthTxns(prevMonth);
+    const prevSpent = prevTxns.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+
+    const spentEl = $('reports-total-spent');
+    if (spentEl) spentEl.textContent = fmt(totalSpent);
+
+    const vsEl = $('reports-vs-last');
+    if (vsEl) {
+        const diff = totalSpent - prevSpent;
+        const pct = prevSpent > 0 ? Math.round((diff / prevSpent) * 100) : 0;
+        vsEl.innerHTML = diff > 0
+            ? `<span style="color:var(--accent-error);">↑ ${Math.abs(pct)}% vs last month</span>`
+            : `<span style="color:var(--accent-success);">↓ ${Math.abs(pct)}% vs last month</span>`;
+    }
+
+    const monthLabel = $('reports-month-label');
+    if (monthLabel) monthLabel.textContent = selectedMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+    const catList = $('reports-categories-list');
+    if (catList) {
+        catList.innerHTML = '';
+        const catTotals = {};
+        expenses.forEach(t => { catTotals[t.category] = (catTotals[t.category] || 0) + t.amount; });
+        const sorted = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+        if (sorted.length === 0) {
+            catList.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">No expenses this month.</p>';
+        } else {
+            sorted.forEach(([catId, amount]) => {
+                const cat = getCat('expense', catId);
+                const pct = totalSpent > 0 ? Math.round((amount / totalSpent) * 100) : 0;
+                catList.innerHTML += `<div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;">
+                    <span style="font-size:1.25rem;width:32px;text-align:center;">${cat.emoji}</span>
+                    <div style="flex:1;"><div style="display:flex;justify-content:space-between;margin-bottom:0.25rem;">
+                        <span style="font-size:0.85rem;font-weight:500;">${cat.name}</span>
+                        <span style="font-size:0.85rem;color:var(--text-muted);">${fmt(amount)} <span style="color:#fff;font-weight:600;">${pct}%</span></span>
+                    </div><div style="height:4px;background:var(--border-subtle);border-radius:2px;overflow:hidden;">
+                        <div style="height:100%;width:${pct}%;background:${cat.color};border-radius:2px;"></div>
+                    </div></div></div>`;
+            });
+        }
+    }
+
+    const insightEl = $('reports-insight');
+    if (insightEl) {
+        if (totalSpent === 0 && totalIncome === 0) {
+            insightEl.textContent = 'Add transactions to see insights here.';
+        } else {
+            const savingsRate = totalIncome > 0 ? Math.round(((totalIncome - totalSpent) / totalIncome) * 100) : 0;
+            insightEl.innerHTML = `Your savings rate is <strong>${savingsRate}%</strong>. ${savingsRate >= 30 ? '🎉 Great job saving!' : savingsRate >= 0 ? '💡 Try to save at least 30%.' : '⚠️ Spending exceeds income.'}`;
+        }
+    }
+}
+
 // ── Helpers ──
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
@@ -830,14 +1102,6 @@ function exportData() {
     URL.revokeObjectURL(url);
     showToast('✅ Data exported successfully!', 'success');
     closeSidebar();
-    const fab = $('fab-add');
-    if (fab) {
-        if (view === 'dashboard' || view === 'transactions') {
-            fab.style.display = 'flex';
-        } else {
-            fab.style.display = 'none';
-        }
-    }
 }
 
 // ── Import Data ──
@@ -885,14 +1149,6 @@ function importData(e) {
     // Reset so the same file can be re-imported
     e.target.value = '';
     closeSidebar();
-    const fab = $('fab-add');
-    if (fab) {
-        if (view === 'dashboard' || view === 'transactions') {
-            fab.style.display = 'flex';
-        } else {
-            fab.style.display = 'none';
-        }
-    }
 }
 
 // ── Toast Notification ──
@@ -1323,12 +1579,14 @@ function renderGroupsList() {
     const list = $('groups-list');
     if (!list) return;
     list.innerHTML = '';
+    const emptyGEl = $('groups-empty');
     
     if (groups.length === 0 && archived.length === 0) {
-        list.innerHTML = '<p class="empty-title">No groups yet. Tap "New Group" to create one.</p>';
-        $('archived-groups-section').style.display = 'none';
+        if(emptyGEl) emptyGEl.style.display = 'block';
+        if($('archived-groups-section')) $('archived-groups-section').style.display = 'none';
         return;
     }
+    if(emptyGEl) emptyGEl.style.display = 'none';
     
     groups.forEach(g => {
         const { netBalance } = getGlobalSelfBalance();
@@ -1424,10 +1682,12 @@ function renderGroupExpenses(groupId) {
     const list = $('gd-expenses-list');
     const exps = getGroupExpenses().filter(e => e.groupId === groupId).sort((a,b) => new Date(b.date) - new Date(a.date));
     list.innerHTML = '';
+    const emptyExpEl = $('gd-expenses-empty');
     if (exps.length === 0) {
-        list.innerHTML = '<p class="empty-title" style="text-align:center; padding:2rem 0; color:var(--text-muted);">No expenses yet.</p>';
+        if(emptyExpEl) emptyExpEl.style.display = 'block';
         return;
     }
+    if(emptyExpEl) emptyExpEl.style.display = 'none';
     exps.forEach(e => {
         const p = getPersonById(e.paidBy);
         const mySplit = e.splits.find(s => s.personId === 'self');
@@ -1505,10 +1765,12 @@ function renderPeopleList() {
     if(!list) return;
     const people = getPeople();
     list.innerHTML = '';
+    const emptyEl = $('people-empty');
     if (people.length === 0) {
-        list.innerHTML = '<p class="empty-title">No people added yet.</p>';
+        if(emptyEl) emptyEl.style.display = 'block';
         return;
     }
+    if(emptyEl) emptyEl.style.display = 'none';
     people.forEach(p => {
         const card = document.createElement('div');
         card.className = 'person-card';
@@ -1530,6 +1792,9 @@ function renderSettleUpView() {
     $('su-global-balance').textContent = fmtINR(Math.abs(gb.netBalance));
     $('su-global-balance').style.color = gb.netBalance > 0.01 ? 'var(--accent-green)' : gb.netBalance < -0.01 ? 'var(--accent-red)' : 'var(--text-primary)';
     
+    if($('su-total-owe')) $('su-total-owe').textContent = fmtINR(gb.totalOwes);
+    if($('su-total-get')) $('su-total-get').textContent = fmtINR(gb.totalGetsBack);
+
     const oweList = $('su-you-owe-list');
     const owedList = $('su-owed-to-you-list');
     oweList.innerHTML = ''; owedList.innerHTML = '';
@@ -2052,6 +2317,11 @@ function validateSplitRows() {
     }
 }
 
+function initPrivacy() {
+    const stored = localStorage.getItem('wp_privacy_mode');
+    if (stored === '1') togglePrivacy();
+}
+
 // Hook into existing init
 const _origInitApp = initApp;
 initApp = function() {
@@ -2063,71 +2333,6 @@ window.closeModal = closeModal;
 window.openSettleModal = openSettleModal;
 
 
-let isPrivate = false;
-const PRIVATE_TARGETS = [
-  'summaryCards',
-  'chartCard',
-  'donutCard',
-  'budgetAmounts'
-];
 
-function togglePrivacy() {
-  isPrivate = !isPrivate;
-
-  const btn = document.getElementById('eyeToggleBtn');
-  const label = document.getElementById('eyeLabel');
-  const banner = document.getElementById('privacyBanner');
-  const icon = document.getElementById('eyeIcon');
-
-  PRIVATE_TARGETS.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-        if (isPrivate) el.classList.add('private-blur');
-        else el.classList.remove('private-blur');
-    }
-  });
-
-  document.querySelectorAll('.budget-amounts, .budget-percent').forEach(el => {
-      if (isPrivate) el.classList.add('private-blur');
-      else el.classList.remove('private-blur');
-  });
-  
-  const recentList = document.getElementById('recent-list');
-  if (recentList) {
-      if (isPrivate) recentList.classList.add('private-blur');
-      else recentList.classList.remove('private-blur');
-  }
-
-  if (isPrivate) {
-    if(btn) btn.classList.add('eye-active');
-    if(label) label.textContent = 'Show';
-    if(banner) banner.style.display = 'flex';
-    if(icon) {
-        icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
-        icon.setAttribute('stroke', '#a5b4fc');
-    }
-    const donutText = document.getElementById('donutCenterAmount');
-    if (donutText) donutText.style.filter = 'blur(5px)';
-  } else {
-    if(btn) btn.classList.remove('eye-active');
-    if(label) label.textContent = 'Hide';
-    if(banner) banner.style.display = 'none';
-    if(icon) {
-        icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
-        icon.setAttribute('stroke', '#9d97b5');
-    }
-    const donutText = document.getElementById('donutCenterAmount');
-    if (donutText) donutText.style.filter = 'none';
-  }
-
-  localStorage.setItem('wp_privacy_mode', isPrivate ? '1' : '0');
-}
-
-function initPrivacy() {
-  if (localStorage.getItem('wp_privacy_mode') === '1') {
-    togglePrivacy();
-  }
-}
-window.togglePrivacy = togglePrivacy;
 
 })();

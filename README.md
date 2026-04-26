@@ -546,6 +546,16 @@ User Action → Event Handler → Update State → Save to localStorage → Re-r
 
 ## Changelog
 
+### v2.1.0 — Reports, CSS Polish & Stability Fixes (2026-04-26)
+
+**New Features & Fixes:**
+- 📊 **Reports View Restored** — Fixed blank reports page, now fully functional with spending insights and category breakdowns.
+- 👁️ **Privacy Toggle Fix** — Resolved syntax errors that prevented the privacy toggle from working, now seamlessly blurs financial amounts across all views.
+- 🎨 **Form & Dropdown CSS** — Overhauled select dropdowns with custom chevron icons, dark mode backgrounds, and focus states.
+- 👥 **People & Group Cards** — Improved UI for group and person cards with proper borders, hover lift effects, and cleaner layouts.
+- 🔒 **PIN Lock Fallback** — Added `crypto.subtle` fallback for non-secure HTTP contexts to ensure PIN lock works perfectly on all local setups and WebViews.
+- 🧰 **Quick Actions Fixed** — Resolved crash in event listener setup that broke Quick Action buttons (Expense, Income, Settle Up, Split Bill).
+
 ### v2.0.0 — Privacy Toggle, FAB Menu & Real-time Dashboard (2026-04-26)
 
 **New Features:**
