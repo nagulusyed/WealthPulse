@@ -1903,8 +1903,8 @@ function renderDashboardGroupsWidget() {
         const div = document.createElement('div');
         div.className = 'group-card';
         div.innerHTML = `
-            <div class="avatar avatar-sm" style="background:var(--accent-indigo)">${g.name[0].toUpperCase()}</div>
-            <div class="group-details"><div class="group-name">${g.name}</div></div>
+            <div class="avatar avatar-sm" style="background:var(--accent-indigo)">${(g.name || 'G')[0].toUpperCase()}</div>
+            <div class="group-details"><div class="group-name">${esc(g.name || 'Unnamed')}</div></div>
             <div class="balance-badge ${netBalance > 0.01 ? 'positive' : netBalance < -0.01 ? 'negative' : 'neutral'}">${netBalance > 0.01 ? 'Get '+fmtINR(netBalance) : netBalance < -0.01 ? 'Owe '+fmtINR(Math.abs(netBalance)) : 'Settled'}</div>
         `;
         div.onclick = () => navigateTo('group-detail', g.id);
