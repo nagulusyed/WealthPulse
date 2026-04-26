@@ -11,7 +11,7 @@ android/app/release/
 *.keystore
 
 # APK files (large binary)
-*.apk
+# *.apk
 
 # IDE
 .vscode/

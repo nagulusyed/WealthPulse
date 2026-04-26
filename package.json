@@ -1,6 +1,6 @@
 {
   "name": "finance-app",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "description": "A beautiful, feature-rich personal finance application built with vanilla web technologies. Track income, expenses, set budgets, and visualize your financial health — all data stays private in your browser.",
   "main": "app.js",
   "scripts": {

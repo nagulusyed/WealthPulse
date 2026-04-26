@@ -62,6 +62,24 @@ WealthPulse is a client-side personal finance management application that helps 
 - **Inline Editing** — Click "Edit limit" to adjust any category budget
 
 ### 📅 Month Navigation
+### 🤝 Groups & Splits (New!)
+- **Group Expense Management** — Create groups and track shared expenses with friends or family
+- **Flexible Split Methods** — Split expenses equally, by exact amount, or by percentage
+- **Dashboard Widgets** — Real-time "My Groups" and "Pending Settlements" cards on the main dashboard
+- **Smart Group Selector** — Easily switch groups or add expenses to any group directly from the dashboard
+
+### 🛡️ Privacy & Security
+- **Privacy Toggle** — Global eye-toggle button to blur/hide sensitive financial data instantly
+- **Persistent Privacy Mode** — Privacy preference is saved and restored automatically
+- **PIN Lock Screen** — Secure 4-digit PIN authentication with SHA-256 hashing
+- **PIN Recovery** — Security question-based recovery system for forgotten PINs
+
+### 📱 Premium Mobile Experience
+- **Interactive FAB Menu** — Multi-action Floating Action Button for quick entry of transactions and expenses
+- **Native Navigation** — Intelligent back-button handling (closes modals/menus before navigating/exiting)
+- **Mobile-Optimized UI** — Scrollable overlays, touch-friendly dropdowns, and responsive glassmorphism design
+- **Android App** — Fully packaged Android application via Capacitor (`WealthPulse_v2.apk`)
+
 - Navigate between months on both Dashboard and Budgets views
 - All calculations and charts update dynamically based on the selected month
 
@@ -527,6 +545,25 @@ User Action → Event Handler → Update State → Save to localStorage → Re-r
 ---
 
 ## Changelog
+
+### v2.0.0 — Privacy Toggle, FAB Menu & Real-time Dashboard (2026-04-26)
+
+**New Features:**
+- 🛡️ **Privacy Hide Toggle** — Global eye-toggle in header to instantly blur sensitive financial amounts.
+- ➕ **Interactive FAB Menu** — Multi-action Floating Action Button with a sleek slide-out menu.
+- 🤝 **Dashboard Groups Widget** — Real-time "My Groups" and "Pending Settlements" integrated into the dashboard.
+- 🎯 **Smart Group Selection** — Intelligent dropdown in Add Expense modal for on-the-fly group switching.
+- 📱 **Native Android Navigation** — Intelligent back-button handling for closing modals and menus.
+
+**UI/UX Improvements:**
+- 🎨 **Ultra-Premium Design** — V2 refinements with glass gradients, soft shadows, and smooth transitions.
+- 📱 **Mobile Optimizations** — Compact layouts, touch-optimized dropdowns, and fixed modal scrolling for mobile view.
+- 🔄 **Real-time Sync** — Dashboard widgets now refresh instantly after adding or editing expenses.
+
+**Technical:**
+- 🏗️ **Updated Android Build** — New `WealthPulse_v2.apk` includes all latest features and optimizations.
+- 🧹 **Code Cleanup** — Unified modal handling and fixed critical ID duplication bugs.
+
 
 ### v1.2.0 — Security Question Recovery (2026-04-26)
 
