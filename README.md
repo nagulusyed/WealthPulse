@@ -528,6 +528,18 @@ User Action → Event Handler → Update State → Save to localStorage → Re-r
 
 ## Changelog
 
+### v1.2.0 — Security Question Recovery (2026-04-26)
+
+**New Features:**
+- 🛡️ **Security Question PIN Recovery** — Users can now recover their forgotten PIN.
+  - Users select a security question and provide an answer during PIN setup.
+  - "Forgot PIN?" link on the lock screen allows users to answer their security question.
+  - Security answers are hashed using SHA-256 for privacy and security.
+  - Seamlessly resets the PIN if answered correctly.
+
+**UI/UX Improvements:**
+- 🎨 Updated the lock screen UI with premium glassmorphism input fields and buttons to match the rest of the application.
+
 ### v1.1.0 — PIN Lock & Navigation Fix (2026-04-26)
 
 **New Features:**

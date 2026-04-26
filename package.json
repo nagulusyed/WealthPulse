@@ -1,6 +1,6 @@
 {
   "name": "finance-app",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A beautiful, feature-rich personal finance application built with vanilla web technologies. Track income, expenses, set budgets, and visualize your financial health — all data stays private in your browser.",
   "main": "app.js",
   "scripts": {
@@ -16,6 +16,7 @@
   "type": "commonjs",
   "dependencies": {
     "@capacitor/android": "^8.3.1",
+    "@capacitor/app": "^8.1.0",
     "@capacitor/cli": "^8.3.1",
     "@capacitor/core": "^8.3.1",
     "@capacitor/splash-screen": "^8.0.1",

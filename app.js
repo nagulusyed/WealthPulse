@@ -26,6 +26,16 @@ const CATEGORIES = {
 const STORAGE_KEY = 'wp_transactions';
 const BUDGET_KEY = 'wp_budgets';
 const PIN_KEY = 'wp_pin_hash';
+const SEC_Q_INDEX_KEY = 'wp_sec_q_index';
+const SEC_Q_HASH_KEY = 'wp_sec_q_hash';
+
+const SECURITY_QUESTIONS = [
+    "What was the name of your first pet?",
+    "In what city were you born?",
+    "What is your mother's maiden name?",
+    "What high school did you attend?",
+    "What was the make of your first car?"
+];
 
 // ── State ──
 let transactions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
@@ -123,7 +133,7 @@ async function handlePinComplete() {
             const hash = await hashPin(pin);
             localStorage.setItem(PIN_KEY, hash);
             pinTemp = '';
-            unlockApp();
+            showSecQSetup();
         } else {
             setPinError('PINs don\'t match. Try again.');
             shakePin();
@@ -193,6 +203,111 @@ function removePinDigit() {
     updatePinDots();
 }
 
+async function hashSecurityAnswer(answer) {
+    const normalized = answer.trim().toLowerCase();
+    const encoder = new TextEncoder();
+    const data = encoder.encode('wp_sec_q_salt_' + normalized);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function showSecQSetup() {
+    $('pin-dots').style.display = 'none';
+    $('pin-keypad').style.display = 'none';
+    $('sec-q-setup-container').style.display = 'block';
+    setPinSubtitle('Add a recovery method');
+    
+    const select = $('sec-q-select');
+    select.innerHTML = '';
+    SECURITY_QUESTIONS.forEach((q, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = q;
+        select.appendChild(option);
+    });
+}
+
+async function saveSecQ() {
+    const index = $('sec-q-select').value;
+    const answer = $('sec-q-answer-setup').value;
+    if (!answer.trim()) {
+        setPinError('Please provide an answer');
+        return;
+    }
+    const hash = await hashSecurityAnswer(answer);
+    localStorage.setItem(SEC_Q_INDEX_KEY, index);
+    localStorage.setItem(SEC_Q_HASH_KEY, hash);
+    $('sec-q-setup-container').style.display = 'none';
+    $('pin-dots').style.display = 'flex';
+    $('pin-keypad').style.display = 'grid';
+    unlockApp();
+}
+
+function showSecQRecovery() {
+    pinMode = 'recovery';
+    $('pin-dots').style.display = 'none';
+    $('pin-keypad').style.display = 'none';
+    $('forgot-pin-link').style.display = 'none';
+    $('pin-reset-link').style.display = 'none';
+    $('sec-q-recovery-container').style.display = 'block';
+    setPinSubtitle('Recover PIN');
+    setPinError('');
+    
+    const index = localStorage.getItem(SEC_Q_INDEX_KEY);
+    if (index !== null && SECURITY_QUESTIONS[index]) {
+        $('sec-q-display-label').textContent = SECURITY_QUESTIONS[index];
+    } else {
+        $('sec-q-display-label').textContent = 'No security question set.';
+        $('sec-q-answer-recovery').disabled = true;
+        $('btn-verify-sec-q').disabled = true;
+    }
+}
+
+function cancelSecQRecovery() {
+    pinMode = 'enter';
+    pinInput = '';
+    $('sec-q-recovery-container').style.display = 'none';
+    $('pin-dots').style.display = 'flex';
+    $('pin-keypad').style.display = 'grid';
+    $('forgot-pin-link').style.display = 'block';
+    $('pin-reset-link').style.display = 'block';
+    setPinSubtitle('Enter your PIN to continue');
+    updatePinDots();
+    setPinError('');
+}
+
+async function verifySecQ() {
+    const answer = $('sec-q-answer-recovery').value;
+    if (!answer.trim()) {
+        setPinError('Please provide an answer');
+        return;
+    }
+    const hash = await hashSecurityAnswer(answer);
+    const storedHash = localStorage.getItem(SEC_Q_HASH_KEY);
+    
+    if (hash === storedHash) {
+        localStorage.removeItem(PIN_KEY);
+        localStorage.removeItem(SEC_Q_INDEX_KEY);
+        localStorage.removeItem(SEC_Q_HASH_KEY);
+        
+        $('sec-q-recovery-container').style.display = 'none';
+        $('pin-dots').style.display = 'flex';
+        $('pin-keypad').style.display = 'grid';
+        $('forgot-pin-link').style.display = 'none';
+        $('pin-reset-link').style.display = 'none';
+        
+        pinMode = 'create';
+        pinInput = '';
+        pinTemp = '';
+        updatePinDots();
+        setPinSubtitle('Create a new 4-digit PIN');
+        setPinError('');
+        $('sec-q-answer-recovery').value = '';
+    } else {
+        setPinError('Incorrect answer. Try again.');
+    }
+}
+
 function setupPinEvents() {
     // Keypad buttons
     document.querySelectorAll('.pin-key[data-key]').forEach(btn => {
@@ -217,10 +332,16 @@ function setupPinEvents() {
             setPinSubtitle('Create a 4-digit PIN');
             setPinError('');
             $('pin-reset-link').style.display = 'none';
+            $('forgot-pin-link').style.display = 'none';
             $('lock-screen').style.display = '';
             $('lock-screen').classList.remove('hidden');
         });
     });
+
+    $('btn-save-sec-q').addEventListener('click', saveSecQ);
+    $('forgot-pin-link').addEventListener('click', showSecQRecovery);
+    $('btn-cancel-recovery').addEventListener('click', cancelSecQRecovery);
+    $('btn-verify-sec-q').addEventListener('click', verifySecQ);
 }
 
 // Initialize PIN screen
@@ -230,10 +351,12 @@ function initPinScreen() {
         pinMode = 'enter';
         setPinSubtitle('Enter your PIN to continue');
         $('pin-reset-link').style.display = '';
+        $('forgot-pin-link').style.display = '';
     } else {
         pinMode = 'create';
         setPinSubtitle('Create a 4-digit PIN');
         $('pin-reset-link').style.display = 'none';
+        $('forgot-pin-link').style.display = 'none';
     }
 }
 
@@ -244,6 +367,7 @@ function initApp() {
     updateMonthLabels();
     populateCategories();
     setupEvents();
+    setupBackButton();
     navigate('dashboard');
 }
 
@@ -266,7 +390,7 @@ function initDefaultBudgets() {
 }
 
 // ── Navigation ──
-function navigate(view, fromPopState) {
+function navigate(view) {
     currentView = view;
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.nav-item[data-view]').forEach(n => n.classList.remove('active'));
@@ -275,30 +399,70 @@ function navigate(view, fromPopState) {
     if (navBtn) navBtn.classList.add('active');
     closeSidebar();
 
-    // History API: push state for non-dashboard views so back button works
-    if (!fromPopState) {
-        if (view === 'dashboard') {
-            // Replace state for dashboard (home)
-            history.replaceState({ view: 'dashboard' }, '', '');
-        } else {
-            // Push state for sub-views
-            history.pushState({ view: view }, '', '');
-        }
-    }
-
     if (view === 'dashboard') renderDashboard();
     else if (view === 'transactions') renderTransactions();
     else if (view === 'budgets') renderBudgets();
 }
 
-// Back button handler — go to dashboard instead of closing app
-window.addEventListener('popstate', function(e) {
-    if (e.state && e.state.view) {
-        navigate(e.state.view, true);
-    } else {
-        navigate('dashboard', true);
+// ── Back Button Handler (Capacitor native + browser fallback) ──
+function setupBackButton() {
+    // Capacitor native back button (Android hardware button)
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+        const CapApp = window.Capacitor.Plugins.App;
+        CapApp.addListener('backButton', () => {
+            // If lock screen is visible, do nothing
+            if (!$('lock-screen').classList.contains('hidden') && $('lock-screen').style.display !== 'none') {
+                return;
+            }
+            // If a modal is open, close it
+            if ($('txn-modal').classList.contains('visible')) {
+                closeTxnModal();
+                return;
+            }
+            if ($('confirm-modal').classList.contains('visible')) {
+                closeConfirm();
+                return;
+            }
+            // If sidebar is open on mobile, close it
+            if (sidebar.classList.contains('open')) {
+                closeSidebar();
+                return;
+            }
+            // If not on dashboard, go to dashboard
+            if (currentView !== 'dashboard') {
+                navigate('dashboard');
+                return;
+            }
+            // On dashboard — exit the app
+            CapApp.exitApp();
+        });
     }
-});
+
+    // Browser fallback: use History API for web testing
+    if (!window.Capacitor) {
+        // Push initial state
+        history.replaceState({ view: 'dashboard' }, '', '');
+
+        // Override navigate to push history for browser
+        const _origNavigate = navigate;
+        window._wpNavigate = function(view) {
+            if (view !== 'dashboard') {
+                history.pushState({ view: view }, '', '');
+            } else {
+                history.replaceState({ view: 'dashboard' }, '', '');
+            }
+            _origNavigate(view);
+        };
+
+        window.addEventListener('popstate', function(e) {
+            if (e.state && e.state.view) {
+                _origNavigate(e.state.view);
+            } else {
+                _origNavigate('dashboard');
+            }
+        });
+    }
+}
 
 // ── Events ──
 function setupEvents() {
