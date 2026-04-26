@@ -25,6 +25,7 @@ const CATEGORIES = {
 
 const STORAGE_KEY = 'wp_transactions';
 const BUDGET_KEY = 'wp_budgets';
+const PIN_KEY = 'wp_pin_hash';
 
 // ── State ──
 let transactions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
@@ -44,13 +45,210 @@ const $ = id => document.getElementById(id);
 const sidebar = $('sidebar');
 const menuBtn = $('menu-btn');
 
-// Init
-setGreeting();
-initDefaultBudgets();
-updateMonthLabels();
-populateCategories();
-setupEvents();
-navigate('dashboard');
+// ── PIN Lock System ──
+const PIN_LENGTH = 4;
+let pinInput = '';
+let pinMode = 'enter'; // 'create', 'confirm', 'enter', 'change-old', 'change-new', 'change-confirm'
+let pinTemp = '';       // Temp storage during create/change flows
+
+async function hashPin(pin) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode('wp_salt_' + pin);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function hasPinSet() {
+    return !!localStorage.getItem(PIN_KEY);
+}
+
+function updatePinDots() {
+    const dots = document.querySelectorAll('.pin-dot');
+    dots.forEach((dot, i) => {
+        dot.classList.toggle('filled', i < pinInput.length);
+        dot.classList.remove('error', 'success');
+    });
+}
+
+function setPinError(msg) {
+    $('pin-error').textContent = msg;
+}
+
+function setPinSubtitle(msg) {
+    $('lock-subtitle').textContent = msg;
+}
+
+function shakePin() {
+    const dots = $('pin-dots');
+    dots.classList.add('shake');
+    document.querySelectorAll('.pin-dot').forEach(d => d.classList.add('error'));
+    setTimeout(() => {
+        dots.classList.remove('shake');
+        document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('error'));
+        pinInput = '';
+        updatePinDots();
+    }, 600);
+}
+
+function showPinSuccess() {
+    document.querySelectorAll('.pin-dot').forEach(d => {
+        d.classList.remove('filled');
+        d.classList.add('success');
+    });
+}
+
+function unlockApp() {
+    showPinSuccess();
+    setTimeout(() => {
+        $('lock-screen').classList.add('hidden');
+        setTimeout(() => {
+            $('lock-screen').style.display = 'none';
+        }, 500);
+        initApp();
+    }, 400);
+}
+
+async function handlePinComplete() {
+    const pin = pinInput;
+    
+    if (pinMode === 'create') {
+        pinTemp = pin;
+        pinMode = 'confirm';
+        pinInput = '';
+        updatePinDots();
+        setPinSubtitle('Confirm your PIN');
+        setPinError('');
+    } else if (pinMode === 'confirm') {
+        if (pin === pinTemp) {
+            const hash = await hashPin(pin);
+            localStorage.setItem(PIN_KEY, hash);
+            pinTemp = '';
+            unlockApp();
+        } else {
+            setPinError('PINs don\'t match. Try again.');
+            shakePin();
+            pinMode = 'create';
+            pinTemp = '';
+            setTimeout(() => setPinSubtitle('Create a 4-digit PIN'), 600);
+        }
+    } else if (pinMode === 'enter') {
+        const hash = await hashPin(pin);
+        const stored = localStorage.getItem(PIN_KEY);
+        if (hash === stored) {
+            unlockApp();
+        } else {
+            setPinError('Wrong PIN. Try again.');
+            shakePin();
+        }
+    } else if (pinMode === 'change-old') {
+        const hash = await hashPin(pin);
+        const stored = localStorage.getItem(PIN_KEY);
+        if (hash === stored) {
+            pinMode = 'change-new';
+            pinInput = '';
+            updatePinDots();
+            setPinSubtitle('Enter new PIN');
+            setPinError('');
+        } else {
+            setPinError('Wrong current PIN');
+            shakePin();
+        }
+    } else if (pinMode === 'change-new') {
+        pinTemp = pin;
+        pinMode = 'change-confirm';
+        pinInput = '';
+        updatePinDots();
+        setPinSubtitle('Confirm new PIN');
+        setPinError('');
+    } else if (pinMode === 'change-confirm') {
+        if (pin === pinTemp) {
+            const hash = await hashPin(pin);
+            localStorage.setItem(PIN_KEY, hash);
+            pinTemp = '';
+            unlockApp();
+            showToast('✅ PIN changed successfully!', 'success');
+        } else {
+            setPinError('PINs don\'t match. Try again.');
+            shakePin();
+            pinMode = 'change-new';
+            pinTemp = '';
+            setTimeout(() => setPinSubtitle('Enter new PIN'), 600);
+        }
+    }
+}
+
+function addPinDigit(digit) {
+    if (pinInput.length >= PIN_LENGTH) return;
+    pinInput += digit;
+    updatePinDots();
+    setPinError('');
+    if (pinInput.length === PIN_LENGTH) {
+        setTimeout(handlePinComplete, 200);
+    }
+}
+
+function removePinDigit() {
+    if (pinInput.length === 0) return;
+    pinInput = pinInput.slice(0, -1);
+    updatePinDots();
+}
+
+function setupPinEvents() {
+    // Keypad buttons
+    document.querySelectorAll('.pin-key[data-key]').forEach(btn => {
+        btn.addEventListener('click', () => addPinDigit(btn.dataset.key));
+    });
+    $('pin-backspace').addEventListener('click', removePinDigit);
+
+    // Keyboard support
+    document.addEventListener('keydown', e => {
+        if ($('lock-screen').classList.contains('hidden')) return;
+        if (e.key >= '0' && e.key <= '9') addPinDigit(e.key);
+        else if (e.key === 'Backspace') removePinDigit();
+    });
+
+    // Change PIN link
+    $('pin-reset-link').addEventListener('click', () => {
+        showConfirm('Reset your PIN? You\'ll need to create a new one.', () => {
+            localStorage.removeItem(PIN_KEY);
+            pinMode = 'create';
+            pinInput = '';
+            updatePinDots();
+            setPinSubtitle('Create a 4-digit PIN');
+            setPinError('');
+            $('pin-reset-link').style.display = 'none';
+            $('lock-screen').style.display = '';
+            $('lock-screen').classList.remove('hidden');
+        });
+    });
+}
+
+// Initialize PIN screen
+function initPinScreen() {
+    setupPinEvents();
+    if (hasPinSet()) {
+        pinMode = 'enter';
+        setPinSubtitle('Enter your PIN to continue');
+        $('pin-reset-link').style.display = '';
+    } else {
+        pinMode = 'create';
+        setPinSubtitle('Create a 4-digit PIN');
+        $('pin-reset-link').style.display = 'none';
+    }
+}
+
+// ── App Init (called after PIN unlock) ──
+function initApp() {
+    setGreeting();
+    initDefaultBudgets();
+    updateMonthLabels();
+    populateCategories();
+    setupEvents();
+    navigate('dashboard');
+}
+
+// Start with PIN screen
+initPinScreen();
 
 // ── Greeting ──
 function setGreeting() {
@@ -68,7 +266,7 @@ function initDefaultBudgets() {
 }
 
 // ── Navigation ──
-function navigate(view) {
+function navigate(view, fromPopState) {
     currentView = view;
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.nav-item[data-view]').forEach(n => n.classList.remove('active'));
@@ -76,10 +274,31 @@ function navigate(view) {
     const navBtn = document.querySelector(`.nav-item[data-view="${view}"]`);
     if (navBtn) navBtn.classList.add('active');
     closeSidebar();
+
+    // History API: push state for non-dashboard views so back button works
+    if (!fromPopState) {
+        if (view === 'dashboard') {
+            // Replace state for dashboard (home)
+            history.replaceState({ view: 'dashboard' }, '', '');
+        } else {
+            // Push state for sub-views
+            history.pushState({ view: view }, '', '');
+        }
+    }
+
     if (view === 'dashboard') renderDashboard();
     else if (view === 'transactions') renderTransactions();
     else if (view === 'budgets') renderBudgets();
 }
+
+// Back button handler — go to dashboard instead of closing app
+window.addEventListener('popstate', function(e) {
+    if (e.state && e.state.view) {
+        navigate(e.state.view, true);
+    } else {
+        navigate('dashboard', true);
+    }
+});
 
 // ── Events ──
 function setupEvents() {
@@ -127,6 +346,18 @@ function setupEvents() {
     $('export-btn').addEventListener('click', exportData);
     $('import-btn').addEventListener('click', () => $('import-file').click());
     $('import-file').addEventListener('change', importData);
+    // Change PIN
+    $('change-pin-btn').addEventListener('click', () => {
+        closeSidebar();
+        pinMode = 'change-old';
+        pinInput = '';
+        updatePinDots();
+        setPinSubtitle('Enter current PIN');
+        setPinError('');
+        $('pin-reset-link').style.display = 'none';
+        $('lock-screen').style.display = '';
+        $('lock-screen').classList.remove('hidden');
+    });
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') { closeTxnModal(); closeConfirm(); }
     });

@@ -14,6 +14,57 @@
 <body>
     <div class="app-bg"></div>
 
+    <!-- ========== PIN LOCK SCREEN ========== -->
+    <div class="lock-screen" id="lock-screen">
+        <div class="lock-bg"></div>
+        <div class="lock-container">
+            <!-- Logo -->
+            <div class="lock-logo">
+                <div class="lock-logo-icon">
+                    <svg width="48" height="48" viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="9" fill="url(#lg2)"/>
+                        <path d="M10 20V16M16 20V12M22 20V9" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+                        <defs><linearGradient id="lg2" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
+                    </svg>
+                </div>
+                <h1 class="lock-title">WealthPulse</h1>
+                <p class="lock-subtitle" id="lock-subtitle">Enter your PIN to continue</p>
+            </div>
+
+            <!-- PIN Dots -->
+            <div class="pin-dots" id="pin-dots">
+                <div class="pin-dot" data-index="0"></div>
+                <div class="pin-dot" data-index="1"></div>
+                <div class="pin-dot" data-index="2"></div>
+                <div class="pin-dot" data-index="3"></div>
+            </div>
+
+            <!-- Error Message -->
+            <p class="pin-error" id="pin-error"></p>
+
+            <!-- Numeric Keypad -->
+            <div class="pin-keypad" id="pin-keypad">
+                <button class="pin-key" data-key="1">1</button>
+                <button class="pin-key" data-key="2">2</button>
+                <button class="pin-key" data-key="3">3</button>
+                <button class="pin-key" data-key="4">4</button>
+                <button class="pin-key" data-key="5">5</button>
+                <button class="pin-key" data-key="6">6</button>
+                <button class="pin-key" data-key="7">7</button>
+                <button class="pin-key" data-key="8">8</button>
+                <button class="pin-key" data-key="9">9</button>
+                <button class="pin-key pin-key-empty" disabled></button>
+                <button class="pin-key" data-key="0">0</button>
+                <button class="pin-key pin-key-action" id="pin-backspace" aria-label="Backspace">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="rotate(180 12 12)"/></svg>
+                </button>
+            </div>
+
+            <!-- Change/Reset PIN link -->
+            <button class="pin-reset-link" id="pin-reset-link" style="display:none">Change PIN</button>
+        </div>
+    </div>
+
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -48,6 +99,10 @@
             <button class="nav-item" id="import-btn">
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M14 10l-4-4-4 4M10 17V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 15v2a1 1 0 001 1h12a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 Import Data
+            </button>
+            <button class="nav-item" id="change-pin-btn">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="4" y="8" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 8V6a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="13" r="1.5" fill="currentColor"/></svg>
+                Change PIN
             </button>
             <button class="nav-item" id="clear-data-btn">
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M7 5V4a1 1 0 011-1h4a1 1 0 011 1v1m2 0v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5h10z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>

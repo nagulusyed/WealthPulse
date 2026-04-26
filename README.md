@@ -435,6 +435,7 @@ User Action → Event Handler → Update State → Save to localStorage → Re-r
 |---|---|---|
 | `wp_transactions` | `JSON Array` | All transaction records |
 | `wp_budgets` | `JSON Object` | Budget limits keyed by category ID |
+| `wp_pin_hash` | `String` | SHA-256 hash of the user's 4-digit PIN |
 
 ### Data Persistence
 - Data is saved to `localStorage` after every add, edit, or delete operation
@@ -510,18 +511,51 @@ User Action → Event Handler → Update State → Save to localStorage → Re-r
 
 ## Future Enhancements
 
-- [ ] **Export/Import** — Download data as CSV/JSON and import from backup files
+- [x] **Export/Import** — Download data as JSON and import from backup files
 - [ ] **Recurring Transactions** — Auto-generate monthly bills and salary entries
 - [ ] **Multi-Currency** — Support for currencies beyond ₹ (INR)
 - [ ] **Dark/Light Theme Toggle** — User-selectable color scheme
 - [ ] **Yearly Overview** — Annual summary with month-by-month breakdown
 - [ ] **Transaction Tags** — Custom tags for flexible filtering
 - [ ] **PWA Support** — Service worker for full offline capability and home screen install
-- [ ] **Data Encryption** — Optional passphrase-based encryption for stored data
+- [x] **PIN Lock** — 4-digit PIN authentication with SHA-256 hashing
 - [x] **Android App** — Native Android wrapper via Capacitor
 - [ ] **iOS App** — Add iOS platform via Capacitor (`npx cap add ios`)
 - [ ] **Push Notifications** — Budget alerts when nearing spending limits
 - [ ] **Biometric Lock** — Fingerprint/face unlock for app access on mobile
+
+---
+
+## Changelog
+
+### v1.1.0 — PIN Lock & Navigation Fix (2026-04-26)
+
+**New Features:**
+- 🔒 **PIN Lock Screen** — App now requires a 4-digit PIN to access
+  - First-time users create a PIN, returning users enter their PIN
+  - PIN stored as SHA-256 hash (not plain text) in localStorage
+  - Animated purple dot indicators with fill/shake/success states
+  - Full numeric keypad with backspace support
+  - Keyboard input support (desktop)
+- 🔑 **Change PIN** — New sidebar button to update PIN (requires current PIN first)
+- 🔙 **Back Button Fix** — Android hardware back button now navigates to Dashboard instead of closing the app
+  - Uses History API (`pushState`/`popState`) for proper navigation stack
+  - Dashboard set as the home/root state
+
+**Files Changed:**
+- `index.html` — Added PIN lock screen overlay + Change PIN sidebar button
+- `styles.css` — Added 160+ lines of lock screen styles (keypad, dots, animations)
+- `app.js` — Added PIN system (~200 lines) + History API navigation
+- `package.json` — Version bump to 1.1.0
+
+### v1.0.0 — Initial Release (2026-04-24)
+
+- 📊 Dashboard with summary cards, charts, and recent transactions
+- 💸 Transaction management (add, edit, delete, search, filter)
+- 🎯 Budget tracking with per-category limits and progress bars
+- 📱 Responsive design with mobile sidebar
+- 📤 Export/Import data as JSON backup
+- 📱 Android app via Capacitor
 
 ---
 
