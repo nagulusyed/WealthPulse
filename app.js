@@ -879,8 +879,8 @@ function renderSparklines(txns, prevTxns, savingsRate) {
     };
     
     drawLine('balance-sparkline', '#2ecc71', false, adjustedBalData);
-    drawLine('income-mini-chart', '#2ecc71', true, incData);
-    drawLine('expense-mini-chart', '#e74c3c', true, expData);
+    drawLine('income-mini-chart', '#2ecc71', false, incData);
+    drawLine('expense-mini-chart', '#e74c3c', false, expData);
 
     // Savings Ring
     const cvs = $('savings-ring');
