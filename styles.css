@@ -1103,7 +1103,7 @@ button.view-link {
         width: 100%;
         min-width: 0;
         max-width: 100vw;
-        padding: 5rem 1rem calc(6rem + env(safe-area-inset-bottom, 0px));
+        padding: calc(5.5rem + env(safe-area-inset-top, 24px)) 1rem calc(6rem + env(safe-area-inset-bottom, 0px));
         overflow-x: hidden;
     }
     .circular-progress-container { width: 36px; height: 36px; right: 1rem; }
@@ -1328,6 +1328,6 @@ button.view-link {
 }
 
 @media (max-width: 400px) {
-    .main-content { padding: 5rem 0.75rem 6rem; }
+    .main-content { padding: calc(5.5rem + env(safe-area-inset-top, 24px)) 0.75rem calc(6rem + env(safe-area-inset-bottom, 0px)); }
     .pin-keypad { max-width: 260px; gap: 0.5rem; }
 }

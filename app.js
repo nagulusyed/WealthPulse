@@ -777,26 +777,6 @@ function renderDashboard() {
     renderDashboardBudgets();
 }
 
-function renderDashboardGroupsWidget() {
-    const expenses = getGroupExpenses();
-    let owe = 0;
-    let owedTo = 0;
-    
-    // Very simplified split logic for dashboard summary
-    expenses.forEach(ex => {
-        if (!ex.splits || !ex.splits['self']) return;
-        const mySplit = ex.splits['self'];
-        const myPaid = ex.paidBy === 'self' ? ex.amount : 0;
-        const diff = myPaid - mySplit;
-        if (diff < 0) owe += Math.abs(diff);
-        else owedTo += diff;
-    });
-    
-    const oweEl = $('dash-you-owe');
-    const owedEl = $('dash-owed-to-you');
-    if (oweEl) oweEl.textContent = '₹' + owe.toFixed(0);
-    if (owedEl) owedEl.textContent = '₹' + owedTo.toFixed(0);
-}
 
 function renderDashboardBudgets() {
     const list = $('budget-mini-list');
@@ -1417,7 +1397,7 @@ function getNetBalancesForGroup(groupId) {
     
     exps.forEach(exp => {
         net[exp.paidBy] = (net[exp.paidBy] || 0) + exp.amount;
-        exp.splits.forEach(s => {
+        (exp.splits || []).forEach(s => {
             if (!s.settled) {
                 net[s.personId] = (net[s.personId] || 0) - s.share;
             } else if (s.settled && exp.paidBy !== s.personId) {
@@ -1456,9 +1436,9 @@ function getSelfBalanceInGroup(groupId) {
     let owes = 0, getsBack = 0;
     exps.forEach(exp => {
         if (exp.paidBy === 'self') {
-            exp.splits.forEach(s => { if (s.personId !== 'self' && !s.settled) getsBack += s.share; });
+            (exp.splits || []).forEach(s => { if (s.personId !== 'self' && !s.settled) getsBack += s.share; });
         } else {
-            exp.splits.forEach(s => { if (s.personId === 'self' && !s.settled) owes += s.share; });
+            (exp.splits || []).forEach(s => { if (s.personId === 'self' && !s.settled) owes += s.share; });
         }
     });
     return { owes, getsBack };
@@ -1894,7 +1874,11 @@ function renderDashboardGroupsWidget() {
     $('dash-bal-amt').style.color = gb.netBalance > 0.01 ? 'var(--accent-green)' : gb.netBalance < -0.01 ? 'var(--accent-red)' : 'var(--text-primary)';
     $('dash-bal-sub').textContent = gb.netBalance > 0.01 ? 'Owed to you' : gb.netBalance < -0.01 ? 'You owe' : 'All settled';
     
-    const groups = getGroups().filter(g => !g.isArchived).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0,3);
+    const groups = getGroups().filter(g => !g.isArchived).sort((a,b) => {
+        const da = a.createdAt ? new Date(a.createdAt) : new Date(0);
+        const db = b.createdAt ? new Date(b.createdAt) : new Date(0);
+        return db - da;
+    }).slice(0,3);
     list.innerHTML = '';
     if(groups.length === 0) list.innerHTML = '<p class="empty-title" style="font-size:0.875rem;">No groups yet.</p>';
     groups.forEach(g => {
