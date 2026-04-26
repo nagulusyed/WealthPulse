@@ -1075,10 +1075,10 @@ button.view-link {
 /* Mobile Optimization — Full Android/Mobile Fix */
 @media (max-width: 1024px) {
     .summary-cards { grid-template-columns: repeat(2, 1fr); }
-    .dashboard-middle-row { grid-template-columns: 1fr; }
+    .dashboard-middle-row { display: flex; flex-direction: column; }
     .dashboard-bottom-row { grid-template-columns: 1fr; }
     .category-chart-layout { flex-direction: column; align-items: flex-start; }
-    .right-col-stack { flex-direction: row; }
+    .right-col-stack { flex-direction: row; order: -1; }
 }
 
 @media (max-width: 768px) {
@@ -1317,7 +1317,6 @@ button.view-link {
 }
 
 @media (max-width: 400px) {
-    .summary-cards { grid-template-columns: 1fr; }
     .main-content { padding: 5rem 0.75rem 6rem; }
     .pin-keypad { max-width: 260px; gap: 0.5rem; }
 }
