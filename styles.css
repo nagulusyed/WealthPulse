@@ -46,6 +46,130 @@
 
     --sidebar-width: 260px;
     --transition-base: 0.2s ease;
+    
+    /* Premium Enhancements */
+    --bg-primary: #0a0a12;
+    --bg-secondary: #13131d;
+    --border-focus: rgba(99,102,241,0.4);
+    --accent-violet: #8b5cf6;
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+/* Premium Card Enhancements */
+.summary-card {
+    background: linear-gradient(135deg, var(--bg-card) 0%, rgba(99,102,241,0.03) 100%);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(99,102,241,0.2);
+}
+
+.card-amount {
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Premium Buttons */
+.modal-btn.save-btn,
+.primary-btn {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+    transition: all 0.3s;
+}
+
+.modal-btn.save-btn:hover,
+.primary-btn:hover {
+    box-shadow: 0 6px 20px rgba(99,102,241,0.4);
+    transform: translateY(-1px);
+}
+
+/* Enhanced Typography */
+.view-title {
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #ffffff, #cbd5e1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Chart Cards */
+.chart-card {
+    transition: all 0.25s ease;
+}
+
+.chart-card:hover {
+    border-color: rgba(99,102,241,0.15);
+}
+
+.chart-title {
+    letter-spacing: -0.01em;
+}
+
+/* Mobile Bottom Nav Premium */
+.mobile-nav {
+    background: rgba(12,11,20,0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
+}
+
+.fab-center {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    box-shadow: 0 8px 24px rgba(99,102,241,0.5), 0 0 0 4px rgba(99,102,241,0.1);
+}
+
+/* Input Fields Premium */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="email"],
+select,
+textarea {
+    transition: all 0.2s;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+}
+
+/* Transaction Items Premium */
+.txn-item {
+    transition: all 0.2s;
+}
+
+.txn-item:hover {
+    background: rgba(99,102,241,0.05);
+    border-color: rgba(99,102,241,0.2);
+    transform: translateX(4px);
+}
+
+/* Group Cards Premium */
+.group-card {
+    transition: all 0.2s;
+}
+
+.group-card:hover {
+    background: rgba(99,102,241,0.05);
+    border-color: rgba(99,102,241,0.2);
+    transform: translateX(4px);
+}
+
+/* Modal Premium */
+.modal-title {
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #ffffff, #cbd5e1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 /* Reset & Global */
@@ -1330,4 +1454,115 @@ button.view-link {
 @media (max-width: 400px) {
     .main-content { padding: calc(5.5rem + env(safe-area-inset-top, 24px)) 0.75rem calc(6rem + env(safe-area-inset-bottom, 0px)); }
     .pin-keypad { max-width: 260px; gap: 0.5rem; }
+}
+
+/* Mobile Optimization for PIN Lock Screen */
+@media (max-width: 768px) {
+    /* 1. & 7. Fit layout within viewport height & avoid flex layout breaks */
+    .lock-screen {
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+        padding: 1rem;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* 3. Adjust spacing and alignment */
+    .lock-container {
+        padding: 1.5rem;
+        max-width: 320px;
+        margin: 0;
+    }
+
+    /* 4. Improve visual hierarchy (Scale down elements) */
+    .lock-logo {
+        margin-bottom: 1.25rem;
+    }
+
+    .lock-logo-icon {
+        width: 56px;
+        height: 56px;
+        margin-bottom: 0.75rem;
+        border-radius: 16px;
+    }
+
+    .lock-title {
+        font-size: 1.25rem;
+    }
+
+    .lock-subtitle {
+        font-size: 0.8rem;
+    }
+
+    /* Keep PIN dots compact and centered */
+    .pin-dots {
+        margin: 0.75rem 0;
+        gap: 1rem;
+    }
+
+    .pin-dot {
+        width: 11px;
+        height: 11px;
+    }
+
+    .pin-error {
+        margin-bottom: 0.5rem;
+    }
+
+    /* 2. Responsive, thumb-friendly PIN keypad */
+    .pin-keypad {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+        max-width: 240px;
+        margin: 0 auto 1rem auto;
+    }
+
+    .pin-key {
+        border-radius: 12px;
+    }
+
+    .pin-key-num {
+        font-size: 1.2rem;
+    }
+
+    .pin-key-sub {
+        font-size: 0.45rem;
+    }
+
+    /* 5. Fix bottom links (Stack vertically and reset mobile styles) */
+    .lock-links {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 0.8rem !important;
+        margin-top: 1.5rem !important;
+    }
+
+    .lock-link {
+        display: inline-block !important;
+        background: transparent !important;
+        color: rgba(255, 255, 255, 0.5) !important;
+        border: none !important;
+        padding: 0.4rem 1rem !important;
+        font-size: 0.85rem !important;
+        font-weight: 600 !important;
+        text-decoration: none !important;
+        -webkit-appearance: none !important;
+        box-shadow: none !important;
+    }
+
+    .lock-link:hover {
+        color: #fff !important;
+        background: rgba(99, 102, 241, 0.1) !important;
+    }
+
+    .lock-link-divider {
+        display: none !important;
+    }
+
+    /* 6. Optimize background decorative elements for performance */
+    .lock-orb {
+        display: none !important;
+    }
 }

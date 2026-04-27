@@ -413,9 +413,7 @@ function initDefaultBudgets() {
     saveBudgets();
 }
 
-// ── Navigation ── (exposed globally for inline onclick handlers)
-window.navigate = function(view) { navigate(view); };
-window.openReportsView = function() { navigate('reports'); };
+// ── Navigation ──
 function navigate(view) {
     const target = $('view-' + view);
     if (!target) {
@@ -774,6 +772,7 @@ function renderDashboard() {
     renderTrendChart();
     renderRecentList(txns);
     renderDashboardGroupsWidget();
+    renderDashboardInsight();
     renderDashboardBudgets();
 }
 
@@ -933,8 +932,16 @@ function renderCategoryChart(txns) {
 }
 
 function renderTrendChart() {
+    // Read dropdown value
+    const monthsSelect = $('trend-months');
+    const monthCount = monthsSelect ? parseInt(monthsSelect.value) : 6;
+    
     const months = [];
-    for (let i = 5; i >= 0; i--) { const d = new Date(selectedMonth); d.setMonth(d.getMonth() - i); months.push(d); }
+    for (let i = monthCount - 1; i >= 0; i--) { 
+        const d = new Date(selectedMonth); 
+        d.setMonth(d.getMonth() - i); 
+        months.push(d); 
+    }
     const labels = months.map(m => m.toLocaleDateString('en-US', { month: 'short' }));
     const incomeData = months.map(m => getMonthTxns(m).filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0));
     const expenseData = months.map(m => getMonthTxns(m).filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0));
@@ -1528,17 +1535,20 @@ function openSettleModal(from, to, groupId, amount) {
         : `Record ₹${amount} payment to ${toP.name}?`;
     $('sm-subtitle').textContent = text;
     
+    // Reset checkbox
+    const checkbox = $('sm-sync-personal');
+    if (checkbox) checkbox.checked = false;
+    
     document.querySelectorAll('#sm-method-btns .type-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('#sm-method-btns .type-btn[data-method="Cash"]').classList.add('active');
     
     $('modal-settle-payment').classList.add('visible');
 }
 
-function markSettlementPaid(from, to, groupId, method, amount) {
+function markSettlementPaid(from, to, groupId, method, amount, syncPersonal) {
     const otherId = from === 'self' ? to : from;
     settleAllWithPerson(otherId, groupId);
     
-    // Create a payment record to show in expenses
     const exps = getGroupExpenses();
     const newExp = {
         id: generateId('ge'),
@@ -1556,7 +1566,29 @@ function markSettlementPaid(from, to, groupId, method, amount) {
     exps.push(newExp);
     saveGroupExpenses(exps);
     
-    showToast(`Settlement marked as paid via ${method}`, 'success');
+    // Sync to personal finance if checkbox enabled
+    if (syncPersonal && from === 'self') {
+        const g = getGroupById(groupId);
+        const p = getPersonById(to);
+        const tId = generateId('t');
+        
+        transactions.push({
+            id: tId,
+            type: 'expense',
+            description: `Settled with ${p?.name || 'Unknown'} (${g?.name || 'Group'})`,
+            amount: parseFloat(amount),
+            category: 'other_exp',
+            date: newExp.date,
+            notes: `Payment via ${method}`
+        });
+        
+        saveTransactions();
+        newExp.linkedTransactionId = tId;
+        saveGroupExpenses(exps);
+        showToast('✓ Settlement paid & synced to personal finance', 'success');
+    } else {
+        showToast(`✓ Settlement marked as paid via ${method}`, 'success');
+    }
 }
 
 
@@ -1867,12 +1899,20 @@ function renderSettleUpView() {
 function renderDashboardGroupsWidget() {
     const list = $('dash-groups-list');
     const slist = $('dash-settlements-list');
-    if (!list || !slist) return;
+    const balAmt = $('dash-bal-amt');
+    const balSub = $('dash-bal-sub');
     
     const gb = getGlobalSelfBalance();
-    $('dash-bal-amt').textContent = fmtINR(Math.abs(gb.netBalance));
-    $('dash-bal-amt').style.color = gb.netBalance > 0.01 ? 'var(--accent-green)' : gb.netBalance < -0.01 ? 'var(--accent-red)' : 'var(--text-primary)';
-    $('dash-bal-sub').textContent = gb.netBalance > 0.01 ? 'Owed to you' : gb.netBalance < -0.01 ? 'You owe' : 'All settled';
+    
+    if (balAmt) {
+        balAmt.textContent = fmtINR(Math.abs(gb.netBalance));
+        balAmt.style.color = gb.netBalance > 0.01 ? 'var(--accent-green)' : gb.netBalance < -0.01 ? 'var(--accent-red)' : 'var(--text-primary)';
+    }
+    if (balSub) {
+        balSub.textContent = gb.netBalance > 0.01 ? 'Owed to you' : gb.netBalance < -0.01 ? 'You owe' : 'All settled';
+    }
+    
+    if (!list || !slist) return;
     
     const groups = getGroups().filter(g => !g.isArchived).sort((a,b) => {
         const da = a.createdAt ? new Date(a.createdAt) : new Date(0);
@@ -1900,7 +1940,7 @@ function renderDashboardGroupsWidget() {
     if(trans.length === 0) slist.innerHTML = '<p class="empty-title" style="font-size:0.875rem;">No pending settlements.</p>';
     trans.forEach(t => {
         const p = getPersonById(t.from === 'self' ? t.to : t.from);
-        if (!p) return; // Prevent crash if person was deleted
+        if (!p) return;
         const isOwe = t.from === 'self';
         const div = document.createElement('div');
         div.className = 'settle-item';
@@ -1911,6 +1951,38 @@ function renderDashboardGroupsWidget() {
         `;
         slist.appendChild(div);
     });
+}
+
+function renderDashboardInsight() {
+    const insightText = $('insight-text');
+    if (!insightText) return;
+    
+    const monthTxns = getMonthTxns();
+    const expenses = monthTxns.filter(t => t.type === 'expense');
+    const totalSpent = expenses.reduce((s, t) => s + t.amount, 0);
+    
+    if (expenses.length === 0) {
+        insightText.textContent = 'Start adding transactions to see personalized insights.';
+        return;
+    }
+    
+    // Find top spending category
+    const catTotals = {};
+    expenses.forEach(t => {
+        catTotals[t.category] = (catTotals[t.category] || 0) + t.amount;
+    });
+    
+    const topCat = Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0];
+    if (!topCat) {
+        insightText.textContent = 'Keep tracking to discover spending patterns.';
+        return;
+    }
+    
+    const [catId, amount] = topCat;
+    const cat = getCat('expense', catId);
+    const pct = totalSpent > 0 ? Math.round((amount / totalSpent) * 100) : 0;
+    
+    insightText.textContent = `${cat.emoji} ${cat.name} is your biggest expense this month (${pct}% of spending).`;
 }
 
 // J - Modal Handlers
@@ -2265,7 +2337,8 @@ function initGroupsFeature() {
             const group = $('sm-group').value;
             const method = document.querySelector('#sm-method-btns .type-btn.active').dataset.method;
             const amt = $('sm-amount').value;
-            markSettlementPaid(from, to, group, method, amt);
+            const syncPersonal = $('sm-sync-personal')?.checked || false;
+            markSettlementPaid(from, to, group, method, amt, syncPersonal);
             closeModal('modal-settle-payment');
             refreshView();
         });
@@ -2369,8 +2442,20 @@ initApp = function() {
     initGroupsFeature();
     initPrivacy();
 };
-window.closeModal = closeModal;
+
+// ── Expose globals (for inline onclick in HTML) ──
+window.navigate        = navigate;
+window.navigateTo      = navigateTo;
+window.closeModal      = closeModal;
 window.openSettleModal = openSettleModal;
+window.openEditPersonModal = openEditPersonModal;
+window.openExpenseDetailModal = openExpenseDetailModal;
+window.openEditExpenseModal   = openEditExpenseModal;
+window.openAddPersonModal     = openAddPersonModal;
+window.openAddGroupModal      = openAddGroupModal;
+window.openAddExpenseModal    = openAddExpenseModal;
+window.togglePrivacy          = togglePrivacy;
+window.deleteGroupExpense     = deleteGroupExpense;
 
 
 
