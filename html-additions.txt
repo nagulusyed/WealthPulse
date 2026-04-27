@@ -1,0 +1,76 @@
+// HTML ADDITIONS FOR NOTIFICATIONS & SETTINGS
+// Copy and paste these into your index.html file
+
+// ============================================================================
+// 1. ADD TO SIDEBAR NAVIGATION (after Reports button)
+// ============================================================================
+
+<button class="nav-item" data-view="notifications" id="nav-notifications">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M10 2a6 6 0 00-6 6v3.6L2.7 13c-.4.5-.1 1 .5 1h13.6c.6 0 .9-.5.5-1L16 11.6V8a6 6 0 00-6-6z" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M9 17a1 1 0 102 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    Notifications
+    <span class="notif-badge" id="notif-badge-sidebar" style="display:none;">0</span>
+</button>
+
+<button class="nav-item" data-view="settings" id="nav-settings">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M10 2v1.5M10 16.5V18M18 10h-1.5M3.5 10H2M15.5 15.5L14.4 14.4M5.6 5.6L4.5 4.5M15.5 4.5L14.4 5.6M5.6 14.4L4.5 15.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    Settings
+</button>
+
+// ============================================================================
+// 2. ADD NEW VIEW CONTAINERS (before mobile navigation)
+// ============================================================================
+
+<!-- Notifications View -->
+<main class="main-content" id="view-notifications" style="display:none;">
+    <header class="page-header">
+        <h1 class="page-title">Notifications</h1>
+        <div class="page-actions">
+            <button class="btn-icon" onclick="markAllNotificationsRead()" title="Mark all as read">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 6L9 17l-5-5"/>
+                </svg>
+            </button>
+            <button class="btn-icon" onclick="clearAllNotifications()" title="Clear all">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+    
+    <div class="notifications-content">
+        <div class="notif-list" id="notif-list"></div>
+    </div>
+</main>
+
+<!-- Settings View -->
+<main class="main-content" id="view-settings" style="display:none;">
+    <header class="page-header">
+        <h1 class="page-title">Settings</h1>
+    </header>
+    
+    <div class="settings-content">
+        <div class="settings-container" id="settings-container"></div>
+    </div>
+</main>
+
+// ============================================================================
+// 3. OPTIONAL: ADD MOBILE NAVIGATION BADGE
+// ============================================================================
+
+<button class="mobile-nav-item" data-view="notifications" onclick="navigate('notifications')">
+    <div class="mobile-nav-icon-wrapper">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a7 7 0 00-7 7v4.3l-2 2.4c-.4.6-.1 1.3.6 1.3h16.8c.7 0 1-.7.6-1.3l-2-2.4V9a7 7 0 00-7-7z"/>
+            <path d="M10.5 21a1.5 1.5 0 003 0" stroke-linecap="round"/>
+        </svg>
+        <span class="notif-badge notif-badge-mobile" id="notif-badge-mobile" style="display:none;">0</span>
+    </div>
+    <span>Notifications</span>
+</button>

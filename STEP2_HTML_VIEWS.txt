@@ -1,0 +1,35 @@
+<!-- STEP 2: Add these VIEW CONTAINERS to index.html BEFORE the mobile navigation (around line 800) -->
+
+<!-- Notifications View -->
+<main class="main-content view" id="view-notifications">
+    <header class="page-header">
+        <h1 class="page-title">Notifications</h1>
+        <div class="page-actions">
+            <button class="btn-icon" onclick="markAllNotificationsRead()" title="Mark all as read">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 6L9 17l-5-5"/>
+                </svg>
+            </button>
+            <button class="btn-icon" onclick="clearAllNotifications()" title="Clear all">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+    
+    <div class="notifications-content">
+        <div class="notif-list" id="notif-list"></div>
+    </div>
+</main>
+
+<!-- Settings View -->
+<main class="main-content view" id="view-settings">
+    <header class="page-header">
+        <h1 class="page-title">Settings</h1>
+    </header>
+    
+    <div class="settings-content">
+        <div class="settings-container" id="settings-container"></div>
+    </div>
+</main>

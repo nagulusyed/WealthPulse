@@ -1,0 +1,142 @@
+/* ============================================================================
+ * STEP 4: JAVASCRIPT INTEGRATION
+ * ============================================================================
+ * 
+ * PART A: Add New Constants (after line 38 in app.js)
+ * ────────────────────────────────────────────────────────────────────────────
+ * Find this line in app.js:
+ * 
+ *     ];
+ * 
+ * (This is the closing bracket of SECURITY_QUESTIONS array around line 38)
+ * 
+ * IMMEDIATELY AFTER that closing bracket, add these lines:
+ */
+
+// ── Notifications & Settings Storage Keys ──
+const NOTIFICATIONS_KEY = 'wp_notifications';
+const SETTINGS_KEY = 'wp_settings';
+const LAST_SUMMARY_KEY = 'wp_last_summary';
+const LAST_REMINDER_PREFIX = 'wp_last_reminder_';
+
+// ── Default Settings ──
+const DEFAULT_SETTINGS = {
+    security: { pinEnabled: true, biometric: false, autoLock: '1min' },
+    preferences: { theme: 'auto', privacyMode: false, defaultView: 'dashboard', currency: '₹', dateFormat: 'DD/MM/YYYY' },
+    notifications: { budgetAlerts: true, budgetThreshold: 80, settlementReminders: true, reminderFrequency: 5, monthlySummary: true, anomalyDetection: true },
+    groups: { autoSync: true, defaultSplitMethod: 'equal', showSettled: true }
+};
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * PART B: Add to State Variables (after line 48 in app.js)
+ * ────────────────────────────────────────────────────────────────────────────
+ * Find these lines (around line 48):
+ * 
+ *     let confirmCallback = null;
+ *     let categoryChart = null;
+ *     let trendChart = null;
+ * 
+ * IMMEDIATELY AFTER those lines, add:
+ */
+
+let appSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || JSON.stringify(DEFAULT_SETTINGS));
+let notifications = JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY) || '[]');
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * PART C: Update navigate() Function
+ * ────────────────────────────────────────────────────────────────────────────
+ * Find the navigate() function (around line 400)
+ * 
+ * Look for this section:
+ * 
+ *     if (view === 'dashboard') renderDashboard();
+ *     else if (view === 'transactions') renderTransactions();
+ *     else if (view === 'budgets') renderBudgets();
+ *     // ... more conditions
+ * 
+ * ADD these two lines BEFORE the existing conditions:
+ */
+
+    if (view === 'notifications') {
+        renderNotificationsList();
+    } else if (view === 'settings') {
+        renderSettings();
+    } else if (view === 'dashboard') renderDashboard();
+    // ... rest of existing code continues
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * PART D: Update initApp() Function
+ * ────────────────────────────────────────────────────────────────────────────
+ * Find the initApp() function (around line 446)
+ * 
+ * Find this line INSIDE initApp():
+ * 
+ *     navigate('dashboard');
+ * 
+ * IMMEDIATELY BEFORE that line, add:
+ */
+
+    initNotificationsAndSettings();
+    navigate('dashboard');
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * PART E: Update saveTxn() Function for Budget Alerts
+ * ────────────────────────────────────────────────────────────────────────────
+ * Find the saveTxn() function (around line 660)
+ * 
+ * Find these lines:
+ * 
+ *     save(); closeTxnModal(); refreshView();
+ * }
+ * 
+ * REPLACE with:
+ */
+
+    save(); 
+    
+    // Check budget alerts for expenses
+    if (data.type === 'expense') {
+        const monthlySpending = transactions
+            .filter(t => {
+                const tDate = new Date(t.date);
+                const now = new Date();
+                return t.type === 'expense' && 
+                       t.category === data.category &&
+                       tDate.getMonth() === now.getMonth() && 
+                       tDate.getFullYear() === now.getFullYear();
+            })
+            .reduce((sum, t) => sum + t.amount, 0);
+        
+        checkBudgetAlerts(data.category, monthlySpending);
+    }
+    
+    closeTxnModal(); refreshView();
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * PART F: Add ALL Functions from notifications-settings-addon.js
+ * ────────────────────────────────────────────────────────────────────────────
+ * 
+ * NOW, copy the ENTIRE content of notifications-settings-addon.js
+ * (Download from above - it's the 39KB file)
+ * 
+ * PASTE IT at the VERY END of app.js, just BEFORE the closing:
+ * 
+ *     })();
+ * 
+ * This adds all notification and settings functions.
+ * 
+ * ============================================================================
+ * COMPLETION CHECKLIST:
+ * ============================================================================
+ * 
+ * ☐ Part A: Added notification constants after SECURITY_QUESTIONS
+ * ☐ Part B: Added appSettings and notifications to state variables
+ * ☐ Part C: Updated navigate() to handle notifications/settings views
+ * ☐ Part D: Added initNotificationsAndSettings() to initApp()
+ * ☐ Part E: Added budget alert check in saveTxn()
+ * ☐ Part F: Pasted entire notifications-settings-addon.js at end of file
+ * 
+ * After completing all parts, save app.js and test!
+ * ============================================================================
+ */

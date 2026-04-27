@@ -1,0 +1,14 @@
+/* ===========================================================================
+ * STEP 3: Copy ALL content from notifications-settings-styles.css
+ * and paste it at the END of your styles.css file
+ * ===========================================================================
+ * 
+ * Download the file: notifications-settings-styles.css (shown above in downloads)
+ * 
+ * 1. Open your styles.css
+ * 2. Scroll to the very bottom
+ * 3. Paste the entire contents of notifications-settings-styles.css
+ * 4. Save the file
+ * 
+ * This adds ~18KB of professional styling for notifications and settings
+ */
